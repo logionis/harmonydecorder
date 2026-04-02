@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chord Studio</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Playfair+Display:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #15151a;
+    --surface2: #1e1e26;
+    --border: #2a2a35;
+    --accent: #4f8ef7;
+    --minor-accent: #e05c7a;
+    --white-key: #f0ede6;
+    --white-key-hover: #e8e3d8;
+    --text: #e8e4df;
+    --text-dim: #6b6878;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 48px;
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(79,142,247,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 90%, rgba(224,92,122,0.06) 0%, transparent 60%);
+  }
+
+  /* ── Header ── */
+  header {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 36px;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+  }
+  header .subtitle {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  /* ── Mode toggle ── */
+  .mode-toggle { margin-left: auto; display: flex; gap: 6px; }
+  .mode-btn {
+    padding: 7px 16px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .mode-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .mode-btn.active {
+    border-color: var(--accent);
+    background: rgba(79,142,247,0.15);
+    color: var(--accent);
+    box-shadow: 0 0 10px rgba(79,142,247,0.2);
+  }
+
+  /* ── Chord name display ── */
+  #chord-display {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.2rem, 6vw, 4rem);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    transition: color 0.25s;
+    text-align: center;
+  }
+  #chord-display.major  { color: var(--accent); }
+  #chord-display.minor  { color: var(--minor-accent); }
+  #chord-display.minor7 { color: #b05ce0; }
+  #chord-display.unknown { color: var(--text-dim); font-size: clamp(1.4rem, 3vw, 2rem); }
+
+  /* ── Piano keyboard ── */
+  #piano-wrap {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 8px 32px rgba(0,0,0,0.6));
+  }
+  #piano {
+    position: relative;
+    display: flex;
+    background: #111116;
+    border-radius: 6px 6px 10px 10px;
+    padding: 10px 10px 0 10px;
+    border: 1px solid #2a2a38;
+    box-shadow: 0 0 0 1px #0a0a0e, 0 20px 60px rgba(0,0,0,0.8),
+                inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .white-key {
+    position: relative;
+    width: 52px;
+    height: 200px;
+    background: var(--white-key);
+    border: 1px solid #bbb;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 8px;
+    margin-right: 2px;
+    user-select: none;
+    transition: background 0.08s, box-shadow 0.08s, transform 0.06s;
+    box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.4);
+    z-index: 1;
+  }
+  .white-key:last-child { margin-right: 0; }
+  .white-key:hover { background: var(--white-key-hover); }
+  .white-key.active {
+    background: linear-gradient(180deg, #a8c8ff 0%, #c5d9ff 40%, #b8d0ff 100%);
+    box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(79,142,247,0.4),
+                0 0 32px rgba(79,142,247,0.2), inset 0 2px 6px rgba(79,142,247,0.3);
+    transform: translateY(1px);
+  }
+  .white-key .note-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.52rem;
+    font-weight: 500;
+    color: #888;
+    letter-spacing: 0.02em;
+    transition: color 0.15s;
+    text-align: center;
+    line-height: 1.1;
+    pointer-events: none;
+  }
+  .white-key.active .note-label { color: var(--accent); }
+
+  .black-key {
+    position: absolute;
+    width: 34px;
+    height: 124px;
+    background: linear-gradient(180deg, #2a2a30 0%, #111116 60%, #1a1a20 100%);
+    border: 1px solid #0a0a0e;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 6px;
+    user-select: none;
+    transition: background 0.08s, box-shadow 0.08s, transform 0.06s;
+    box-shadow: 2px 4px 8px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+    z-index: 2;
+    top: 10px;
+  }
+  .black-key:hover {
+    background: linear-gradient(180deg, #333340 0%, #1a1a22 60%, #222228 100%);
+  }
+  .black-key.active {
+    background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 40%, #1d4ed8 100%);
+    box-shadow: 0 0 0 1px var(--accent), 0 0 12px rgba(79,142,247,0.5),
+                0 0 24px rgba(79,142,247,0.3), 2px 4px 8px rgba(0,0,0,0.6);
+    transform: translateY(1px);
+  }
+  .black-key .note-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.44rem;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.02em;
+    pointer-events: none;
+    text-align: center;
+    line-height: 1.1;
+  }
+  .black-key.active .note-label { color: rgba(200,220,255,0.9); }
+
+  /* ── Chord controls ── */
+  .controls {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 36px;
+  }
+  .control-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .control-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    width: 60px;
+    flex-shrink: 0;
+  }
+  .note-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+  .note-btn {
+    width: 44px; height: 36px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem; font-weight: 500;
+    border-radius: 6px; cursor: pointer;
+    transition: all 0.12s; letter-spacing: 0.02em;
+  }
+  .note-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(79,142,247,0.08); }
+  .note-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; box-shadow: 0 0 12px rgba(79,142,247,0.35); }
+
+  .quality-buttons { display: flex; gap: 8px; }
+  .quality-btn {
+    padding: 8px 22px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem; font-weight: 500;
+    border-radius: 6px; cursor: pointer;
+    transition: all 0.12s; letter-spacing: 0.06em;
+  }
+  .quality-btn.major:hover,  .quality-btn.major.active  { border-color: var(--accent);      color:#fff; background: var(--accent);      box-shadow: 0 0 14px rgba(79,142,247,0.4); }
+  .quality-btn.aug:hover,  .quality-btn.aug.active  { border-color: var(--accent);      color:#fff; background: var(--accent);      box-shadow: 0 0 14px rgba(79,142,247,0.4); }
+  .quality-btn.minor:hover,  .quality-btn.minor.active  { border-color: var(--minor-accent); color:#fff; background: var(--minor-accent); box-shadow: 0 0 14px rgba(224,92,122,0.4); }
+  .quality-btn.dim:hover,  .quality-btn.dim.active  { border-color: var(--minor-accent); color:#fff; background: var(--minor-accent); box-shadow: 0 0 14px rgba(224,92,122,0.4); }
+  .quality-btn.minor7:hover, .quality-btn.minor7.active { border-color: #b05ce0;             color:#fff; background: #b05ce0;             box-shadow: 0 0 14px rgba(176,92,224,0.4); }
+  .quality-btn.maj7:hover, .quality-btn.maj7.active { border-color: #b05ce0;             color:#fff; background: #b05ce0;             box-shadow: 0 0 14px rgba(176,92,224,0.4); }
+  .quality-btn.maj7plus:hover, .quality-btn.maj7plus.active { border-color: #b05ce0;             color:#fff; background: #b05ce0;             box-shadow: 0 0 14px rgba(176,92,224,0.4); }
+  .quality-btn.minor7plus:hover, .quality-btn.minor7plus.active { border-color: #b05ce0;             color:#fff; background: #b05ce0;             box-shadow: 0 0 14px rgba(176,92,224,0.4); }
+  .quality-btn.dim7:hover, .quality-btn.dim7.active { border-color: #b05ce0;             color:#fff; background: #b05ce0;             box-shadow: 0 0 14px rgba(176,92,224,0.4); }
+  .quality-btn.sus2:hover, .quality-btn.sus2.active { border-color: #b05ce0;             color:#fff; background: #b05ce0;             box-shadow: 0 0 14px rgba(176,92,224,0.4); }
+  .quality-btn.sus4:hover, .quality-btn.sus4.active { border-color: #b05ce0;             color:#fff; background: #b05ce0;             box-shadow: 0 0 14px rgba(176,92,224,0.4); }
+
+  #clear-btn {
+    padding: 8px 20px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace; font-size: 0.72rem;
+    border-radius: 6px; cursor: pointer;
+    transition: all 0.12s; letter-spacing: 0.06em;
+  }
+  #clear-btn:hover { border-color: #ff6b6b; color: #ff6b6b; background: rgba(255,107,107,0.08); }
+
+  /* ── Note Reader / Staff ── */
+  #note-mode-panel { display: none; width: 100%; max-width: 900px; }
+  #staff-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 2px; padding: 5px 20px 20px;
+    margin-bottom: 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+  }
+  #staff-svg { width: 100%; max-width: 520px; height: auto; overflow: visible; }
+  #note-name-display {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.6rem, 4vw, 2.6rem);
+    font-weight: 700; color: var(--accent);
+    letter-spacing: -0.02em; min-height: 44px;
+    transition: color 0.2s, opacity 0.3s, transform 0.12s ease-out;
+  }
+  #note-name-display.empty { color: var(--text-dim); font-size: 1.2rem; }
+
+  .home-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 680px) {
+    #piano-wrap { overflow-x: auto; width: 100%; justify-content: flex-start; -webkit-overflow-scrolling: touch; }
+  }
+  
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Chord Studio</h1>
+  <span class="subtitle">By Harmony Decoder</span>
+  <div class="mode-toggle">
+    <a href="index.html" class="mode-btn home-btn">⌂ Home</a>
+    <button class="mode-btn active" id="btn-chord-mode">♩ Chords</button>
+    <button class="mode-btn"        id="btn-note-mode">𝄞 Note Reader</button>
+  </div>
+</header>
+
+<!-- Chord name (chord mode only) -->
+<div id="chord-display">—</div>
+
+<!-- Piano (always visible) -->
+<div id="piano-wrap">
+  <div id="piano"><!-- keys injected by JS --></div>
+</div>
+
+<!-- Note Reader panel -->
+<div id="note-mode-panel">
+  <div id="staff-wrap">
+    <svg id="staff-svg" viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div id="note-name-display" class="empty">—</div>
+  </div>
+</div>
+
+<!-- Chord controls -->
+<div class="controls" id="chord-controls">
+  <div class="control-row">
+    <span class="control-label">Root</span>
+    <div class="note-buttons" id="root-buttons"></div>
+  </div>
+  <div class="control-row">
+    <span class="control-label">Quality</span>
+    <div class="quality-buttons">
+      <button class="quality-btn major"  data-quality="major">major</button>
+      <button class="quality-btn minor"  data-quality="minor">minor</button>
+      <button class="quality-btn aug"  data-quality="aug">aug</button>
+      <button class="quality-btn dim"  data-quality="dim">dim</button>
+    </div>
+    </div>
+  <div class="control-row">
+    <span class="control-label"></span>
+     <div class="quality-buttons">
+      <button class="quality-btn maj7"  data-quality="maj7">7</button>
+      <button class="quality-btn minor7" data-quality="minor7">min 7</button>
+      <button class="quality-btn minor7plus" data-quality="minor7plus">min 7+</button>
+      <button class="quality-btn maj7plus"  data-quality="maj7plus">maj 7+</button>
+      <button class="quality-btn dim7"  data-quality="dim7">dim°</button>
+      <button class="quality-btn sus2"  data-quality="sus2">sus2</button>
+      <button class="quality-btn sus4"  data-quality="sus4">sus4</button>
+     </div>
+  </div>
+  <div class="control-row">
+    <span class="control-label"></span>
+     <div class="quality-buttons">
+      <button id="clear-btn">✕ Clear</button>
+     </div>
+  </div>
+</div>
+
+
+<script>
+'use strict';
+
+// ─────────────────────────────────────────────────────
+// APP MODE  — declared at top so every function can use it
+// ─────────────────────────────────────────────────────
+let appMode = 'chord'; // 'chord' | 'note'
+
+// ─────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────
+const NOTE_NAMES = ['C','D♭','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+
+const KEYS = (function() {
+  const keys = [];
+  for (let midi = 60; midi <= 76; midi++) {
+    const semitone = midi % 12;
+    const octave   = Math.floor(midi / 12) - 1;
+    const noteName = NOTE_NAMES[semitone];
+    const isBlack  = [1,3,6,8,10].includes(semitone);
+    keys.push({ midi, noteName, octave, displayName: noteName + octave, isBlack });
+  }
+  return keys;
+})();
+
+const CHORD_INTERVALS = { major:[0,4,7], minor:[0,3,7], aug:[0,4,8], dim:[0,3,6], maj7:[0,4,7,10], minor7:[0,3,7,10], minor7plus:[0,3,7,11], maj7plus:[0,4,7,11], dim7:[0,3,6,9],sus2:[0,2,7],sus4:[0,5,7]};
+
+// ─────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────
+let state = {
+  selectedRoot:    null,
+  selectedQuality: null,
+  activeKeys:      new Set()
+};
+
+// ─────────────────────────────────────────────────────
+// AUDIO
+// ─────────────────────────────────────────────────────
+const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new AudioCtxClass();
+  return audioCtx;
+}
+
+function playNote(midi) {
+  try {
+    const ctx  = getAudioCtx();
+    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    const filterNode = ctx.createBiquadFilter();
+    filterNode.type            = 'lowpass';
+    filterNode.frequency.value = 3000;
+    const gainNode = ctx.createGain();
+    filterNode.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    [[1,1.0,'triangle'],[2,0.2,'sine'],[3,0.08,'sine']].forEach(([mult, gv, type]) => {
+      const osc = ctx.createOscillator();
+      const g   = ctx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq * mult;
+      g.gain.value = gv;
+      osc.connect(g);
+      g.connect(filterNode);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 1.5);
+    });
+
+    const now = ctx.currentTime;
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(0.4, now + 0.005);
+    gainNode.gain.exponentialRampToValueAtTime(0.15, now + 0.3);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
+  } catch(e) { /* audio context may be suspended */ }
+}
+
+// ─────────────────────────────────────────────────────
+// BUILD PIANO
+// ─────────────────────────────────────────────────────
+function buildPiano() {
+  const piano   = document.getElementById('piano');
+  piano.innerHTML = '';
+  const WHITE_W = 54, BLACK_W = 34, PAD = 10;
+
+  // White keys
+  KEYS.filter(k => !k.isBlack).forEach(key => {
+    const el = document.createElement('div');
+    el.className    = 'white-key';
+    el.dataset.midi = key.midi;
+    el.innerHTML    = `<span class="note-label">${fmtLabel(key.displayName)}</span>`;
+    el.addEventListener('click', () => onKeyClick(key.midi));
+    piano.appendChild(el);
+  });
+
+  // White-key index lookup for black-key positioning
+  const wIdxOf = {};
+  let wi = 0;
+  KEYS.forEach(k => { if (!k.isBlack) wIdxOf[k.midi] = wi++; });
+
+  // Black keys (absolutely positioned)
+  KEYS.filter(k => k.isBlack).forEach(key => {
+    const lIdx = wIdxOf[key.midi - 1];
+    const rIdx = wIdxOf[key.midi + 1];
+    const cx   = ((lIdx + rIdx) / 2) * WHITE_W + WHITE_W / 2;
+    const el   = document.createElement('div');
+    el.className    = 'black-key';
+    el.dataset.midi = key.midi;
+    el.style.left   = (PAD + cx - BLACK_W / 2) + 'px';
+    el.innerHTML    = `<span class="note-label">${fmtLabel(key.displayName)}</span>`;
+    el.addEventListener('click', () => onKeyClick(key.midi));
+    piano.appendChild(el);
+  });
+}
+
+function fmtLabel(display) {
+  return display.replace(/([♯]?)(\d)$/, '$1<br>$2');
+}
+
+// ─────────────────────────────────────────────────────
+// BUILD CHORD CONTROLS
+// ─────────────────────────────────────────────────────
+function buildControls() {
+  const container = document.getElementById('root-buttons');
+  NOTE_NAMES.forEach(note => {
+    const btn = document.createElement('button');
+    btn.className    = 'note-btn';
+    btn.textContent  = note;
+    btn.dataset.note = note;
+    btn.addEventListener('click', () => onRootClick(note));
+    container.appendChild(btn);
+  });
+  document.querySelectorAll('.quality-btn').forEach(btn =>
+    btn.addEventListener('click', () => onQualityClick(btn.dataset.quality))
+  );
+  document.getElementById('clear-btn').addEventListener('click', clearAll);
+}
+
+// ─────────────────────────────────────────────────────
+// KEY CLICK — single entry point for both modes
+// ─────────────────────────────────────────────────────
+function onKeyClick(midi) {
+  playNote(midi);
+  if (appMode === 'note') {
+    activateNoteMode(midi);
+  } else {
+    if (state.activeKeys.has(midi)) state.activeKeys.delete(midi);
+    else state.activeKeys.add(midi);
+    detectChordFromKeys();
+    renderKeyHighlights();
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// CHORD MODE LOGIC
+// ─────────────────────────────────────────────────────
+function detectChordFromKeys() {
+  const midis = Array.from(state.activeKeys).sort((a,b) => a-b);
+  const n     = midis.length;
+  if (n !== 3 && n !== 4) {
+    state.selectedRoot = state.selectedQuality = null;
+    updateChordDisplay(); updateControlHighlights();
+    return;
+  }
+  const pcs = midis.map(m => m % 12);
+  for (let i = 0; i < n; i++) {
+    const rot  = [...pcs.slice(i), ...pcs.slice(0,i)];
+    const ints = rot.slice(1).map(pc => (pc - rot[0] + 12) % 12);
+    for (const [quality, ci] of Object.entries(CHORD_INTERVALS)) {
+      if (ci.length !== n) continue;
+      if (ci.slice(1).every((v,idx) => v === ints[idx])) {
+        state.selectedRoot    = NOTE_NAMES[rot[0]];
+        state.selectedQuality = quality;
+        updateChordDisplay(); updateControlHighlights();
+        return;
+      }
+    }
+  }
+  state.selectedRoot = state.selectedQuality = null;
+  updateChordDisplay(); updateControlHighlights();
+}
+
+function onRootClick(note) {
+  state.selectedRoot = (state.selectedRoot === note) ? null : note;
+  if (state.selectedRoot && state.selectedQuality) applyChordToKeys();
+  else if (state.selectedRoot) { updateControlHighlights(); updateChordDisplay(); }
+  else clearAll();
+}
+
+function onQualityClick(quality) {
+  state.selectedQuality = (state.selectedQuality === quality) ? null : quality;
+  if (state.selectedRoot && state.selectedQuality) applyChordToKeys();
+  else { updateControlHighlights(); updateChordDisplay(); }
+}
+
+function applyChordToKeys() {
+  const rootPc    = NOTE_NAMES.indexOf(state.selectedRoot);
+  const intervals = CHORD_INTERVALS[state.selectedQuality];
+  const midiRange = KEYS.map(k => k.midi);
+  const rootMidi  = midiRange.find(m => m % 12 === rootPc);
+  if (rootMidi === undefined) return;
+
+  const active = new Set();
+  for (const iv of intervals) {
+    const tpc = (rootPc + iv) % 12;
+    let found = midiRange.find(m => m >= rootMidi && m % 12 === tpc);
+    if (found === undefined) found = midiRange.find(m => m % 12 === tpc);
+    if (found !== undefined) active.add(found);
+  }
+  state.activeKeys = active;
+  renderKeyHighlights(); updateControlHighlights(); updateChordDisplay();
+}
+
+function clearAll() {
+  state.selectedRoot = state.selectedQuality = null;
+  state.activeKeys   = new Set();
+  renderKeyHighlights(); updateControlHighlights(); updateChordDisplay();
+}
+
+function renderKeyHighlights() {
+  document.querySelectorAll('[data-midi]').forEach(el => {
+    el.classList.toggle('active', state.activeKeys.has(parseInt(el.dataset.midi, 10)));
+  });
+}
+
+function updateControlHighlights() {
+  document.querySelectorAll('.note-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.note === state.selectedRoot)
+  );
+  document.querySelectorAll('.quality-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.quality === state.selectedQuality)
+  );
+}
+
+function updateChordDisplay() {
+  const el = document.getElementById('chord-display');
+  if (state.selectedRoot && state.selectedQuality) {
+    el.textContent = state.selectedRoot + {major:'',aug:'aug',minor:'m',dim:'dim',minor7:'m7',maj7:'7',minor7plus:'m7+',maj7plus:'7+',dim7:'dim°',sus2:'sus2',sus4:'sus4'}[state.selectedQuality];
+    el.className   = state.selectedQuality;
+  } else if (state.activeKeys.size > 0) {
+    el.textContent = '— unknown —'; el.className = 'unknown';
+  } else {
+    el.textContent = '—'; el.className = '';
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// MODE MANAGEMENT
+// ─────────────────────────────────────────────────────
+function setMode(mode) {
+  // 1. Stop any note timer
+  if (noteTimer) { clearTimeout(noteTimer); noteTimer = null; }
+  activeNoteMidi = null;
+  blackKeyFlat   = {};
+
+  // 2. Clear all key/chord state
+  state.selectedRoot = state.selectedQuality = null;
+  state.activeKeys   = new Set();
+  renderKeyHighlights();
+
+  // 3. Switch mode
+  appMode = mode;
+  const isChord = (mode === 'chord');
+
+  document.getElementById('btn-chord-mode').classList.toggle('active',  isChord);
+  document.getElementById('btn-note-mode').classList.toggle('active',  !isChord);
+
+  document.getElementById('note-mode-panel').style.display = isChord ? 'none'  : 'block';
+  document.getElementById('chord-controls').style.display  = isChord ? 'flex'  : 'none';
+  document.getElementById('chord-divider').style.display   = isChord ? 'block' : 'none';
+  document.getElementById('chord-display').style.display   = isChord ? 'flex'  : 'none';
+
+  if (isChord) {
+    updateChordDisplay(); updateControlHighlights();
+  } else {
+    renderStaff(null);
+    const nd = document.getElementById('note-name-display');
+    nd.textContent = '—'; nd.className = 'empty';
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// NOTE MODE STATE
+// ─────────────────────────────────────────────────────
+let noteTimer      = null;
+let activeNoteMidi = null;
+let blackKeyFlat   = {};  // midi → true = display as flat
+
+const NOTE_DURATION_MS = 3000;
+
+const BLACK_KEY_MIDIS = new Set([61,63,66,68,70,73,75]);
+const FLAT_NAMES      = {61:'D♭',63:'E♭',66:'G♭',68:'A♭',70:'B♭',73:'D♭',75:'E♭'};
+
+// Staff diatonic positions  (pos 0 = E4 = bottom staff line; each step = one note)
+const NAT_POS   = {60:-2,62:-1,64:0,65:1,67:2,69:3,71:4,72:5,74:6,76:7};
+const SHARP_POS = {61:-2,63:-1,66:1,68:2,70:3,73:5,75:6};
+const FLAT_POS  = {61:-1,63: 0,66:2,68:3,70:4,73:6,75:7};
+
+function getStaffPos(midi) {
+  if (!BLACK_KEY_MIDIS.has(midi)) return NAT_POS[midi];
+  return blackKeyFlat[midi] ? FLAT_POS[midi] : SHARP_POS[midi];
+}
+
+function activateNoteMode(midi) {
+  // Toggle sharp/flat if same black key hit again
+  if (BLACK_KEY_MIDIS.has(midi)) {
+    blackKeyFlat[midi] = (activeNoteMidi === midi) ? !blackKeyFlat[midi] : false;
+  }
+
+  if (noteTimer) clearTimeout(noteTimer);
+
+  // Deactivate previous key visually if different
+  if (activeNoteMidi !== null && activeNoteMidi !== midi) {
+    state.activeKeys.delete(activeNoteMidi);
+    renderKeyHighlights();
+  }
+
+  activeNoteMidi   = midi;
+  state.activeKeys = new Set([midi]);
+  renderKeyHighlights();
+  renderStaff(midi);
+  updateNoteNameDisplay(midi);
+
+  noteTimer = setTimeout(() => {
+    state.activeKeys.delete(midi);
+    renderKeyHighlights();
+    activeNoteMidi = null;
+    renderStaff(null);
+    const nd = document.getElementById('note-name-display');
+    nd.textContent = '—'; nd.className = 'empty';
+  }, NOTE_DURATION_MS);
+}
+
+function updateNoteNameDisplay(midi) {
+  const key   = KEYS.find(k => k.midi === midi);
+  if (!key) return;
+  const isFlat = BLACK_KEY_MIDIS.has(midi) && blackKeyFlat[midi];
+  const label  = isFlat ? (FLAT_NAMES[midi] + key.octave) : key.displayName;
+  const el     = document.getElementById('note-name-display');
+  el.textContent    = label;
+  el.className      = '';
+  el.style.transform = 'scale(1.12)';
+  setTimeout(() => { el.style.transform = 'scale(1)'; }, 120);
+}
+
+// ─────────────────────────────────────────────────────
+// TREBLE CLEF STAFF RENDERER
+// ─────────────────────────────────────────────────────
+//
+// Staff lines (bottom→top, pos 0,2,4,6,8): E4 G4 B4 D5 F5
+// Staff spaces (pos 1,3,5,7):              F4 A4 C5 E5
+// Below staff: pos -1 = D4 (space), pos -2 = C4 (ledger line)
+//
+// lineGap = distance between two adjacent staff lines = 2 × stepH
+// Treble clef: the G-curl wraps the second staff line (G4, pos 2).
+// We position the SVG text so that curl aligns with posY(2).
+
+function renderStaff(midi) {
+  const svg = document.getElementById('staff-svg');
+  if (!svg) return;
+
+  const W       = 520, H = 200;
+  const lineGap = 16;
+  const stepH   = lineGap / 2;   // pixels per diatonic step
+  const staffL  = 82, staffR = W - 28;
+  const bottomY = 180;            // y of E4 (pos 0, bottom staff line)
+
+  const posY = pos => bottomY - pos * stepH;
+
+  const p = [];
+
+  // Defs
+  p.push(`<defs><filter id="ng" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="3" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter></defs>`);
+
+  // 5 staff lines
+  for (let i = 0; i < 5; i++) {
+    const y = bottomY - i * lineGap;
+    p.push(`<line x1="${staffL}" y1="${y}" x2="${staffR}" y2="${y}" stroke="#4a4a5a" stroke-width="1.5"/>`);
+  }
+
+  // Treble clef
+  // G4 line y = posY(2) = bottomY - lineGap
+  // For 'Times New Roman' at font-size 86, the G-curl is approximately
+  // 56 px below the top of the glyph, and the baseline is ~82 px below.
+  // So: text baseline y = G4y + (82 - 56) = G4y + 26
+  const g4y = posY(2);
+  p.push(`<text x="5" y="${g4y + 26}" font-size="120"
+    font-family="'Times New Roman',serif"
+    fill="#5a5468" dominant-baseline="auto">𝄞</text>`);
+
+  if (midi === null || midi === undefined) {
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = p.join('');
+    return;
+  }
+
+  const pos   = getStaffPos(midi);
+  const noteY = posY(pos);
+  const noteX = Math.round(W / 2) + 10;
+  const rx = 10, ry = 7;
+
+  // Ledger line at C4 (pos -2) — draw whenever the note is at or below pos -1
+  // (D4 at pos -1 floats just above this ledger line; C4 sits on it)
+  if (pos <= -1) {
+    const ly = posY(-2);
+    p.push(`<line x1="${noteX-22}" y1="${ly}" x2="${noteX+22}" y2="${ly}"
+      stroke="#b0acbc" stroke-width="1.8"/>`);
+  }
+
+  // Accidental
+  const isFlat  = BLACK_KEY_MIDIS.has(midi) && blackKeyFlat[midi];
+  const isSharp = BLACK_KEY_MIDIS.has(midi) && !blackKeyFlat[midi];
+  const accX = noteX - 24;
+  if (isSharp) p.push(`<text x="${accX}" y="${noteY+1}" font-size="19" fill="#4f8ef7"
+    font-family="'Times New Roman',serif" text-anchor="middle"
+    dominant-baseline="middle" font-weight="bold">♯</text>`);
+  if (isFlat)  p.push(`<text x="${accX}" y="${noteY+2}" font-size="22" fill="#4f8ef7"
+    font-family="'Times New Roman',serif" text-anchor="middle"
+    dominant-baseline="middle">♭</text>`);
+
+  // Note head
+  p.push(`<ellipse cx="${noteX}" cy="${noteY}" rx="${rx}" ry="${ry}"
+    transform="rotate(-18,${noteX},${noteY})"
+    fill="#4f8ef7" stroke="#2d6de0" stroke-width="1" filter="url(#ng)"/>`);
+
+  // Stem
+  const stemUp = pos < 4;
+  const stemX  = stemUp ? noteX + rx - 2 : noteX - rx + 2;
+  const stemY1 = stemUp ? noteY - ry + 1 : noteY + ry - 1;
+  const stemY2 = stemUp ? noteY - 52      : noteY + 52;
+  p.push(`<line x1="${stemX}" y1="${stemY1}" x2="${stemX}" y2="${stemY2}"
+    stroke="#4f8ef7" stroke-width="2.2"/>`);
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = p.join('');
+}
+
+// ─────────────────────────────────────────────────────
+// KEYBOARD SHORTCUTS
+// ─────────────────────────────────────────────────────
+const KB_MAP = {
+  'a':60,'s':62,'d':64,'f':65,'g':67,'h':69,'j':71,'k':72,'l':74,';':76,
+  'w':61,'e':63,'t':66,'y':68,'u':70,'o':73,'p':75
+};
+
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.repeat) return;
+  const k    = (e.key === ';') ? ';' : e.key.toLowerCase();
+  const midi = KB_MAP[k];
+  if (midi === undefined) return;
+  e.preventDefault();
+  onKeyClick(midi);
+});
+
+// ─────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────
+buildPiano();
+buildControls();
+renderStaff(null);
+
+document.getElementById('btn-chord-mode').addEventListener('click', () => setMode('chord'));
+document.getElementById('btn-note-mode').addEventListener('click',  () => setMode('note'));
+</script>
+</body>
+</html>

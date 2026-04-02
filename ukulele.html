@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Ukulele Chords</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F0E8;
+    --card: #FFFDF9;
+    --border: #E2D9CC;
+    --text: #1A1612;
+    --muted: #8A7E72;
+    --hint: #B5A99E;
+    --dot: #1A1612;
+    --open-dot: #5B48B8;
+    --accent: #5B48B8;
+    --tab-active-bg: #1A1612;
+    --tab-active-text: #F5F0E8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+  }
+  .app { width: 100%; max-width: 390px; padding: 18px 14px 30px; }
+  .header { text-align: center; margin-bottom: 18px; }
+  .header-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px; font-weight: 400; color: var(--text); letter-spacing: -0.3px;
+  }
+  .header-sub { font-size: 12px; color: var(--hint); margin-top: 2px; letter-spacing: 1.5px; }
+
+  .mode-tabs {
+    display: grid; grid-template-columns: 1fr 1fr;
+    background: var(--card); border-radius: 12px;
+    padding: 3px; margin-bottom: 16px; border: 1px solid var(--border);
+  }
+  .tab {
+    padding: 9px 0; border: none; border-radius: 10px;
+    background: transparent; color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .tab.active { background: var(--tab-active-bg); color: var(--tab-active-text); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card {
+    background: var(--card); border-radius: 18px;
+    border: 1px solid var(--border); padding: 18px 16px 16px; margin-bottom: 12px;
+  }
+
+  .result-pill {
+    text-align: center; padding: 12px 14px;
+    background: var(--bg); border-radius: 12px;
+    border: 1px solid var(--border); margin-bottom: 14px;
+  }
+  .result-chord { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--text); }
+  .result-notes { font-size: 11px; color: var(--hint); margin-top: 3px; letter-spacing: 0.3px; }
+
+  .root-slider-wrap { margin-bottom: 16px; }
+  .root-display { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .root-note { font-family: 'DM Serif Display', serif; font-size: 36px; color: var(--text); line-height: 1; }
+  .root-lbl { font-size: 12px; color: var(--hint); }
+  input[type=range].root-range {
+    width: 100%; height: 4px; border-radius: 2px;
+    appearance: none; -webkit-appearance: none;
+    background: var(--border); outline: none; cursor: pointer;
+  }
+  input[type=range].root-range::-webkit-slider-thumb {
+    appearance: none; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--text); cursor: pointer;
+    border: 3px solid var(--card); box-shadow: 0 0 0 1.5px var(--border);
+  }
+  input[type=range].root-range::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--text); cursor: pointer; border: 3px solid var(--card);
+  }
+  .root-ticks { display: flex; justify-content: space-between; margin-top: 6px; }
+  .tick { font-size: 10px; color: var(--hint); text-align: center; flex: 1; }
+  .tick.active-tick { color: var(--text); font-weight: 500; }
+
+  /* Type buttons — 4 per row, wraps automatically for 8, 12, etc. */
+  .type-btns { display: grid; grid-template-columns: repeat(4,1fr); gap: 7px; margin-bottom: 16px; }
+  .type-btn {
+    padding: 9px 0; border-radius: 10px;
+    border: 1px solid var(--border);
+    background: transparent; color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  .type-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .home-btn {
+    display: block; width: 100%; margin-top: 14px; padding: 11px 0;
+    border-radius: 12px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    text-align: center; text-decoration: none;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .home-btn:hover { border-color: var(--muted); color: var(--text); background: var(--card); }
+
+  .chord-name-row { text-align: center; margin-bottom: 16px; }
+  .chord-big { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); }
+
+  .frets-row { display: flex; gap: 14px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+  .fret-wrap { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .pos-badge {
+    font-size: 10px; color: var(--hint);
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 20px; padding: 2px 8px;
+  }
+  .no-chord { text-align: center; padding: 28px 0; color: var(--hint); font-size: 13px; }
+
+  .str-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 10px; }
+  .str-col { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .str-name { font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 3px; letter-spacing: 0.4px; }
+  .fret-btn {
+    width: 100%; height: 30px; border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--bg); color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer;
+    transition: background 0.1s, color 0.1s;
+  }
+  .fret-btn:hover { border-color: var(--muted); }
+  .fret-btn.sel { background: var(--dot); color: #F5F0E8; border-color: var(--dot); }
+  .fret-btn.sel-open { background: var(--open-dot); color: #EEE9FF; border-color: var(--open-dot); }
+  .fret-btn.hidden-fret { display: none; }
+
+  .more-frets-btn {
+    width: 100%; margin-top: 6px; padding: 8px;
+    border-radius: 10px; border: 1px dashed var(--border);
+    background: transparent; color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .more-frets-btn:hover { border-color: var(--muted); color: var(--text); }
+
+  .board-wrap { display: flex; justify-content: center; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-title">Ukulele Chords</div>
+    <div class="header-sub">Harmony Decoder</div>
+  </div>
+
+  <div class="mode-tabs">
+    <button class="tab active" onclick="switchMode('A')">Chord lookup</button>
+    <button class="tab" onclick="switchMode('B')">Fret explorer</button>
+  </div>
+
+  <!-- MODE A -->
+  <div id="panelA" class="panel active">
+    <div class="card">
+      <div class="root-slider-wrap">
+        <div class="root-display">
+          <span class="root-note" id="rootDisplay">C</span>
+          <span class="root-lbl">root note</span>
+        </div>
+        <input type="range" class="root-range" id="rootRange" min="0" max="11" value="0" step="1" oninput="onRootSlide()">
+        <div class="root-ticks" id="rootTicks"></div>
+      </div>
+      <div class="type-btns" id="typeBtns"></div>
+      <div class="chord-name-row"><div class="chord-big" id="chordNameA">C maj</div></div>
+      <div class="frets-row" id="fretsRow"></div>
+      <div id="noChordMsg" class="no-chord" style="display:none;">Fingering coming soon</div>
+    </div>
+    <a href="index.html" class="home-btn">&#8962; Home</a>
+  </div>
+
+  <!-- MODE B -->
+  <div id="panelB" class="panel">
+    <div class="card">
+      <div class="result-pill">
+        <div class="result-chord" id="resultChord">—</div>
+        <div class="result-notes" id="resultNotes">select frets below</div>
+      </div>
+      <div class="board-wrap" id="boardWrap"></div>
+      <div class="str-grid" id="strGrid"></div>
+      <button class="more-frets-btn" id="moreFretsBtn" onclick="toggleMoreFrets()">+ show frets 6–12</button>
+    </div>
+    <a href="index.html" class="home-btn">&#8962; Home</a>
+  </div>
+</div>
+
+<script>
+const NOTES  = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const UKE    = [7, 0, 4, 9]; // open pitches for G C E A strings
+const SNAMES = ['G','C','E','A'];
+
+// ── Chord type buttons ────────────────────────────────────────────────────────
+// Add more entries here freely — they wrap into rows of 4 automatically.
+const TYPES = [
+  {v:'major', l:'maj'},
+  {v:'m',     l:'min'},
+  {v:'m7',    l:'m7'},
+  {v:'7',     l:'7'},
+  {v:'7+',    l:'7+'},
+  {v:'aug',   l:'aug'},
+  {v:'dim7',   l:'dim7'},
+  {v:'sus4',  l:'sus4'},
+];
+
+// ── Display labels ────────────────────────────────────────────────────────────
+// Maps type value → human label shown in the chord name.
+// Keep in sync with TYPES above.
+const TYPE_LABELS = {
+  major:'maj', m:'min', m7:'m7', '7':'7', '7+':'7+',
+  aug:'aug', dim7:'dim7', sus4:'sus4',
+};
+
+let rootIdx = 0, typeVal = 'major';
+
+// ── Mode A chord shapes ───────────────────────────────────────────────────────
+// Key:    '<Note>_<typeValue>'   e.g. 'C_major', 'D_m', 'F#_7'
+// shapes: array of [G, C, E, A] fret arrays  (0 = open, null = skip/muted)
+// barres: matching array — fret number of barre, or null
+const CHORD_DB = {
+  // ── Major ──────────────────────────────────────────
+  'C_major': { shapes: [[0,0,0,3], [5,4,null,null], [8,null,7,null]], barres: [null, 3, 7] },
+  'C#_major': { shapes: [[null,null,null,4], [6,5,null,null], [9,null,8,null]], barres: [1, 4, 8] },
+  'D_major': { shapes: [[2,2,2,0], [null,null,null,5], [7,6,null,null]], barres: [null, 2, 5] },
+  'D#_major': { shapes: [[null,null,null,6], [3,3,3,1], [8,7,null,null]], barres: [3, null, 6] },
+  'E_major': { shapes: [[null,null,null,7], [4,4,4,2], [9,8,null,null]], barres: [4, null, 7] },
+  'F_major': { shapes: [[2,0,1,0], [null,null,null,8], [5,5,5,3]], barres: [null, 5, null] },
+  'F#_major': { shapes: [[3,null,2,null], [null,null,null,9], [6,6,6,4]], barres: [1, 6, null] },
+  'G_major': { shapes: [[0,2,3,2], [4,null,3,null], [7,7,7,5]], barres: [null, 2, null] },
+  'G#_major': { shapes: [[5,null,4,null], [1,3,4,3], [8,8,8,6]], barres: [3, null, null] },
+  'A_major': { shapes: [[2,1,0,0], [6,null,5,null], [2,4,5,4]], barres: [null, 4, null] },
+  'A#_major': { shapes: [[3,2,null,null], [7,null,6,null], [3,5,6,5]], barres: [1, 5, null] },
+  'B_major': { shapes: [[4,3,null,null], [8,null,7,null], [4,6,7,6]], barres: [2, 6, null] },
+
+  // ── Minor ──────────────────────────────────────────
+  'C_m': { shapes: [[0,3,3,3], [5,null,null,null], [0,7,8,6]], barres: [null, 3, null] },
+  'C#_m': { shapes: [[6,null,null,null], [1,1,0,null]], barres: [4, null] },
+  'D_m': { shapes: [[2,2,1,0], [2,5,5,5]], barres: [null, null] },
+  'D#_m': { shapes: [[3,3,2,1], [3,6,6,6]], barres: [null, null] },
+  'E_m': { shapes: [[0,4,3,2], [4,4,3,2], [0,4,0,2]], barres: [null, null, null] },
+  'F_m': { shapes: [[1,0,1,3], [1,5,4,3]], barres: [null, null] },
+  'F#_m': { shapes: [[2,1,2,0], [2,1,2,4]], barres: [null, null] },
+  'G_m': { shapes: [[0,2,3,1], [3,2,3,5]], barres: [null, null] },
+  'G#_m': { shapes: [[4,3,4,2], [1,3,4,2]], barres: [null, null] },
+  'A_m': { shapes: [[2,0,0,0], [2,4,5,3]], barres: [null, null] },
+  'A#_m': { shapes: [[3,null,null,null], [6,5,6,8]], barres: [1, null] },
+  'B_m': { shapes: [[4,null,null,null], [7,6,7,9]], barres: [2, null] },
+  
+
+  // ── Minor 7 ────────────────────────────────────────
+  'C_m7':   { shapes: [[null,null,null,null]], barres: [3] },
+  'C#_m7':   { shapes: [[null,null,null,null], [1,1,0,2]], barres: [4,null] },
+  'D_m7':   { shapes: [[null,null,null,null], [2,2,1,3]], barres: [5,null] },
+  'D#_m7':   { shapes: [[null,null,null,null], [3,3,2,4]], barres: [6,null] },
+  'E_m7':   { shapes: [[null,null,null,null], [0,2,0,2]], barres: [7,null] },
+  'F_m7':   { shapes: [[null,null,null,null], [null,3,null,3]], barres: [8,1] },
+  'F#_m7':   { shapes: [[2,4,2,4], [null,null,null,null]], barres: [null,9] },
+  'G_m7':   { shapes: [[0,2,1,1], [null,null,null,null]], barres: [null,10] },
+  'G#_m7':   { shapes: [[1,3,2,2], [null,null,null,null]], barres: [null,11] },
+  'A_m7':   { shapes: [[0,0,0,0], [2,4,3,3]], barres: [null,null] },
+  'A#_m7':   { shapes: [[null,null,null,null], [3,5,4,4]], barres: [1,null] },
+  'B_m7':   { shapes: [[null,null,null,null], [4,6,5,5]], barres: [2,null] },
+
+  // ── Dominant 7 ─────────────────────────────────────
+  'C_7':   { shapes: [[0,0,0,1], [null,4,null,null]], barres: [null,3] },
+  'C#_7':   { shapes: [[null,null,null,2], [null,5,null,null]], barres: [1,4] },
+  'D_7':   { shapes: [[null,null,null,3], [null,6,null,null]], barres: [2,5] },
+  'D#_7':   { shapes: [[null,null,null,4], [null,7,null,null]], barres: [3,6] },
+  'E_7':   { shapes: [[1,2,0,2], [null,8,null,null]], barres: [null,7] },
+  'F_7':   { shapes: [[2,3,1,0], [2,3,1,3], [null,9,null,null]], barres: [null,null,8] },
+  'F#_7':   { shapes: [[3,4,2,4], [null,10,null,null], [null,null,null,7]], barres: [null,9,6] },
+  'G_7':   { shapes: [[0,2,1,2], [null,11,null,null]], barres: [null,10] },
+  'G#_7':   { shapes: [[1,3,2,3], [null,12,null,null]], barres: [null, 11] },
+  'A_7':   { shapes: [[0,1,0,0], [2,4,3,4], [null,null,null,10]], barres: [null,null,9] },
+  'A#_7':   { shapes: [[null,2,null,null], [3,5,4,5]], barres: [1,null] },
+  'B_7':   { shapes: [[null,3,null,null], [4,6,5,6]], barres: [2,null] },
+
+  // ── Major 7 (7+) ─────────────────────────────
+  'C_7+':   { shapes: [[0,0,0,2], [5,4,3,2]], barres: [null,null] },
+  'C#_7+':   { shapes: [[null,null,null,3], [6,5,4,3]], barres: [1,null] },
+  'D_7+':   { shapes: [[null,null,null,4], [7,6,5,4]], barres: [2,null] },
+  'D#_7+':   { shapes: [[null,null,null,5], [8,7,6,5]], barres: [3,null] },
+  'E_7+':   { shapes: [[1,3,0,2], [null,null,null,6]], barres: [null,4] },
+  'F_7+':   { shapes: [[2,4,1,3], [null,null,null,7]], barres: [null,5] },
+  'F#_7+':   { shapes: [[3,5,2,4], [null,null,null,8]], barres: [null,6] },
+  'G_7+':   { shapes: [[0,3,3,3], [null,null,null,9]], barres: [null,7] },
+  'G#_7+':   { shapes: [[1,4,4,4], [null,null,null,10]], barres: [null,8] },
+  'A_7+':   { shapes: [[2,2,0,0], [null,null,null,11]], barres: [null,9] },
+  'A#_7+':   { shapes: [[3,2,1,0], [null,null,null,12]], barres: [null,10] },
+  'B_7+':   { shapes: [[4,3,2,1], [null,null,null,13]], barres: [null,11] },
+
+  // ── Augmented ──────────────────────────────────────
+  'C_aug':   { shapes: [[1,0,0,3], [4,3,3,2]], barres: [null,null] },
+  'C#_aug':   { shapes: [[2,1,1,0], [2,null,null,4]], barres: [null,1] },
+  'D_aug':   { shapes: [[3,2,2,1], [3,null,null,5]], barres: [null,2] },
+  'D#_aug':   { shapes: [[0,3,3,2], [4,null,null,6]], barres: [null,3] },
+  'E_aug':   { shapes: [[1,0,0,3], [5,null,null,7]], barres: [null,4] },
+  'F_aug':   { shapes: [[2,1,1,0], [6,null,null,8]], barres: [null,5] },
+  'F#_aug':   { shapes: [[3,2,2,1], [7,null,null,9]], barres: [null,6] },
+  'G_aug':   { shapes: [[0,3,3,2],[8,null,null,10]], barres: [null,7] },
+  'G#_aug':   { shapes: [[1,0,0,3], [9,null,null,11]], barres: [null,8] },
+  'A_aug':   { shapes: [[2,1,1,4], [10,null,null,12]], barres: [null,9] },
+  'A#_aug':   { shapes: [[3,2,2,1], [11,null,null,13]], barres: [null,10] },
+  'B_aug':   { shapes: [[4,3,3,2], [12,null,null,14]], barres: [null,11] },
+
+  // ── Diminished ─────────────────────────────────────
+  'C_dim7':   { shapes: [[2,3,2,3]], barres: [null] },
+  'C#_dim7':   { shapes: [[0,1,0,1]], barres: [null] },
+  'D_dim7':   { shapes: [[1,2,1,2]], barres: [null] },
+  'D#_dim7':   { shapes: [[2,3,2,3]], barres: [null] },
+  'E_dim7':   { shapes: [[0,1,0,1]], barres: [null] },
+  'F_dim7':   { shapes: [[1,2,1,2]], barres: [null] },
+  'F#_dim7':   { shapes: [[2,3,2,3]], barres: [null] },
+  'G_dim7':   { shapes: [[0,1,0,1]], barres: [null] },
+  'G#_dim7':   { shapes: [[1,2,1,2]], barres: [null] },
+  'A_dim7':   { shapes: [[2,3,2,3]], barres: [null] },
+  'A#_dim7':   { shapes: [[0,1,0,1],[3,4,3,4]], barres: [null,null] },
+  'B_dim7':   { shapes: [[1,2,1,2]], barres: [null] },
+
+  // ── Sus4 ───────────────────────────────────────────
+  'C_sus4':   { shapes: [[0,0,1,3]], barres: [null] },
+  'C#_sus4':   { shapes: [[null,null,2,4]], barres: [1] },
+  'D_sus4':   { shapes: [[0,2,3,0], [null,null,3,5]], barres: [null,2] },
+  'D#_sus4':   { shapes: [[null,3,4,null], [null,null,4,6]], barres: [1,3] },
+  'E_sus4':   { shapes: [[2,4,0,2], [null,4,5,null], [null,null,5,7]], barres: [null,2,4] },
+  'F_sus4':   { shapes: [[3,0,1,1], [null,5,6,null], [null,null,6,8]], barres: [null,3,5] },
+  'F#_sus4':   { shapes: [[null,6,7,null], [null,null,7,9]], barres: [4,6] },
+  'G_sus4':   { shapes: [[0,0,1,3]], barres: [null] },
+  'G#_sus4':   { shapes: [[null,null,2,4]], barres: [1] },
+  'A_sus4':   { shapes: [[2,2,0,0], [null,null,3,5]], barres: [null,1] },
+  'A#_sus4':   { shapes: [[3,3,null,null]], barres: [1] },
+  'B_sus4':   { shapes: [[4,4,null,null]], barres: [2] },
+};
+
+// ── Mode B chord recognition ──────────────────────────────────────────────────
+// Key:   '<Note>_<typeValue>'  (same type values as TYPES)
+// Value: [G, C, E, A] fret numbers for one canonical voicing.
+// Detection compares pitch-class sets, so any enharmonic fingering matches.
+const CHORD_MAP = {
+  // Major
+  'C_major':  [0,0,0,3],  'C#_major': [1,1,1,4],  'D_major':  [2,2,2,0],
+  'D#_major': [0,3,3,1],  'E_major':  [4,4,4,2],  'F_major':  [2,0,1,0],
+  'F#_major': [3,1,2,1],  'G_major':  [0,2,3,2],  'G#_major': [5,3,4,3],
+  'A_major':  [2,1,0,0],  'A#_major': [3,2,1,1],  'B_major':  [4,3,2,2],
+
+  // Minor
+  'C_m':  [0,3,3,3],  'C#_m': [1,4,4,4],  'D_m':  [2,2,1,0],
+  'D#_m': [3,3,2,1],  'E_m':  [0,4,3,2],  'F_m':  [1,0,1,3],
+  'F#_m': [2,1,2,0],  'G_m':  [0,2,3,1],  'G#_m': [1,3,4,2],
+  'A_m':  [2,0,0,0],  'A#_m': [3,1,1,1],  'B_m':  [4,2,2,2],
+
+  // Dominant 7
+  'C_7':[0,0,0,1],'C#_7':[1,1,1,2],'D_7':[2,2,2,3],
+  'D#_7':[3,3,3,4],'E_7':[1,2,0,2],'F_7':[2,3,1,3],
+  'F#_7':[3,4,2,4],'G_7':[0,2,1,2],'G#_7':[1,3,2,3],
+  'A_7':[0,1,0,0],'A#_7':[1,2,1,1],'B_7':[2,3,2,2],
+
+  // Minor 7
+  'C_m7':[0,3,3,3],'C#_m7':[1,4,4,4],'D_m7':[2,2,1,3],
+  'D#_m7':[3,3,2,4],'E_m7':[0,2,0,2],'F_m7':[1,3,1,3],
+  'F#_m7':[2,4,2,4],'G_m7':[0,2,1,1],'G#_m7':[1,3,2,2],
+  'A_m7':[0,0,0,0],'A#_m7':[1,1,1,1],'B_m7':[2,2,2,2],
+
+  // Major 7
+  'C_7+':[0,0,0,2],'C#_7+':[1,1,1,3],'D_7+':[2,2,2,4],
+  'D#_7+':[3,3,3,5],'E_7+':[1,3,0,2],'F_7+':[2,4,1,3],
+  'F#_7+':[3,5,2,4],'G_7+':[0,2,2,2],'G#_7+':[1,3,3,3],
+  'A_7+':[1,1,0,0],'A#_7+':[2,2,1,1],'B_7+':[3,3,2,2],
+
+  // Augmented
+  'C_aug':[1,0,0,3],'C#_aug':[2,1,1,0],'D_aug':[3,2,2,1],
+  'D#_aug':[0,3,3,2],'E_aug':[1,0,0,3],'F_aug':[2,1,1,0],
+  'F#_aug':[3,2,2,1],'G_aug':[0,3,3,2],'G#_aug':[1,0,0,3],
+  'A_aug':[2,1,1,0],'A#_aug':[3,2,2,1],'B_aug':[0,3,3,2],
+
+  // Diminished
+  'C_dim':[2,3,2,3],'C#_dim':[0,1,0,1],'D_dim':[1,2,1,2],
+  'D#_dim':[2,3,2,3],'E_dim':[0,1,0,1],'F_dim':[1,2,1,2],
+  'F#_dim':[2,3,2,3],'G_dim':[0,1,0,1],'G#_dim':[1,2,1,2],
+  'A_dim':[2,3,2,3],'A#_dim':[0,1,0,1],'B_dim':[1,2,1,2],
+
+  // Suspended 4
+  'C_sus4':[0,0,1,3],'C#_sus4':[1,1,2,4],'D_sus4':[2,2,3,0],
+  'D#_sus4':[3,3,4,1],'E_sus4':[4,4,0,2],'F_sus4':[0,0,1,1],
+  'F#_sus4':[1,1,2,2],'G_sus4':[0,2,3,3],'G#_sus4':[1,3,4,4],
+  'A_sus4':[2,2,0,0],'A#_sus4':[3,3,1,1],'B_sus4':[4,4,2,2],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+function noteIdx(si, f) { return (UKE[si] + f) % 12; }
+
+// ── Shared SVG fretboard renderer ────────────────────────────────────────────
+// shape:   [G, C, E, A] fret numbers (0 = open, null = muted/skip)
+// barreAt: fret number of barre, or null
+// size:    'sm' (Mode A small) | 'lg' (Mode B large)
+function makeFretSVG(shape, barreAt, size) {
+  const lg    = size === 'lg';
+  const W     = lg ? 130 : 90;
+  const ml    = lg ? 28  : 28;
+  const mt    = lg ? 22  : 22;
+  const ss    = lg ? 24  : 16;   // string spacing
+  const fs    = lg ? 22  : 17;   // fret spacing
+  const nf    = lg ? 6   : 5;    // number of frets shown
+  const dotR  = lg ? 9   : 6.5;
+  const inR   = lg ? 4   : 3;
+  const openR = lg ? 5.5 : 4.5;
+  const bw    = ss * 3;
+  const ox = ml, oy = mt;
+
+  const pressed    = shape.filter(f => f != null && f > 0);
+  const minPressed = pressed.length ? Math.min(...pressed) : 1;
+  const hasOpen    = shape.some(f => f === 0);
+
+  // Fret-start rules (same in both modes):
+  //  1. barre present    → start at barre fret, show "Xfr" label
+  //  2. no open strings  → start at min pressed fret, show "Xfr" label
+  //  3. any open string  → start at fret 1, show nut
+  const startFret = barreAt ? barreAt : (!hasOpen ? minPressed : 1);
+  const showNut   = startFret === 1;
+  const boardTop  = oy + (showNut ? 3 : 0);
+  const H         = boardTop + nf * fs + (lg ? 22 : 16);
+
+  let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  s += `<rect width="${W}" height="${H}" rx="${lg?14:12}" fill="#FFFDF9" stroke="#E2D9CC" stroke-width="1"/>`;
+  s += `<rect x="${ox-2}" y="${boardTop}" width="${bw+4}" height="${nf*fs}" rx="3" fill="#D4A96A"/>`;
+
+  if (showNut) {
+    s += `<rect x="${ox-2}" y="${oy-1}" width="${bw+4}" height="4" rx="2" fill="#EEE0C0"/>`;
+  } else {
+    s += `<text x="${ox-8}" y="${oy+fs*0.7}" font-size="10" font-family="DM Sans,sans-serif" text-anchor="end" fill="#8A7E72">${startFret}fr</text>`;
+  }
+
+  for (let f = 0; f <= nf; f++) {
+    const y = boardTop + f * fs;
+    s += `<line x1="${ox}" y1="${y}" x2="${ox+bw}" y2="${y}" stroke="#C09A60" stroke-width="${f===0?1.5:0.7}"/>`;
+  }
+  for (let i = 0; i < 4; i++) {
+    const x = ox + i * ss;
+    s += `<line x1="${x}" y1="${boardTop}" x2="${x}" y2="${boardTop+nf*fs}" stroke="#8A6840" stroke-width="${(i===0||i===3)?1.2:0.8}"/>`;
+  }
+
+  if (barreAt && barreAt >= startFret && barreAt < startFret + nf) {
+    const fy = boardTop + (barreAt - startFret) * fs + fs / 2;
+    s += `<rect x="${ox-3}" y="${fy-6}" width="${bw+6}" height="12" rx="6" fill="#1A1612"/>`;
+  }
+
+  shape.forEach((fret, si) => {
+    if (fret == null) return;
+    const x = ox + si * ss;
+    if (fret === 0) {
+      s += `<circle cx="${x}" cy="${oy-8}" r="${openR}" fill="none" stroke="#5B48B8" stroke-width="1.5"/>`;
+    } else {
+      const adj = fret - startFret;
+      if (adj >= 0 && adj < nf) {
+        const fy = boardTop + adj * fs + fs / 2;
+        s += `<circle cx="${x}" cy="${fy}" r="${dotR}" fill="#1A1612"/>`;
+        s += `<circle cx="${x}" cy="${fy}" r="${inR}" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>`;
+      }
+    }
+  });
+
+  SNAMES.forEach((n, si) => {
+    s += `<text x="${ox+si*ss}" y="${boardTop+nf*fs+14}" font-size="9" font-family="DM Sans,sans-serif" text-anchor="middle" fill="#B5A99E">${n}</text>`;
+  });
+
+  s += `</svg>`;
+  return s;
+}
+
+// ── Mode A ────────────────────────────────────────────────────────────────────
+function buildRootTicks() {
+  document.getElementById('rootTicks').innerHTML =
+    NOTES.map((n,i) => `<span class="tick${i===rootIdx?' active-tick':''}">${n}</span>`).join('');
+}
+function buildTypeBtns() {
+  document.getElementById('typeBtns').innerHTML =
+    TYPES.map(t =>
+      `<button class="type-btn${t.v===typeVal?' active':''}" onclick="setType('${t.v}')">${t.l}</button>`
+    ).join('');
+}
+function onRootSlide() {
+  rootIdx = parseInt(document.getElementById('rootRange').value);
+  document.getElementById('rootDisplay').textContent = NOTES[rootIdx];
+  buildRootTicks();
+  renderA();
+}
+function setType(v) { typeVal = v; buildTypeBtns(); renderA(); }
+
+function renderA() {
+  const root  = NOTES[rootIdx];
+  const label = TYPE_LABELS[typeVal] || typeVal;
+  document.getElementById('chordNameA').textContent = root + ' ' + label;
+
+  const key  = root + '_' + typeVal;
+  const data = CHORD_DB[key];
+  const row  = document.getElementById('fretsRow');
+  const msg  = document.getElementById('noChordMsg');
+
+  if (!data) { row.innerHTML = ''; msg.style.display = 'block'; return; }
+  msg.style.display = 'none';
+  row.innerHTML = '';
+  data.shapes.forEach((shape, i) => {
+    const barre = data.barres ? data.barres[i] : null;
+    const wrap  = document.createElement('div');
+    wrap.className = 'fret-wrap';
+    wrap.innerHTML = `<div class="pos-badge">pos ${i+1}</div>` + makeFretSVG(shape, barre, 'sm');
+    row.appendChild(wrap);
+  });
+}
+
+// ── Mode B ────────────────────────────────────────────────────────────────────
+let selFrets     = [0, 0, 0, 0];
+let showAllFrets = false;
+
+function toggleMoreFrets() {
+  showAllFrets = !showAllFrets;
+  buildStrGrid();
+  document.getElementById('moreFretsBtn').textContent =
+    showAllFrets ? '− hide frets 6–12' : '+ show frets 6–12';
+}
+
+function buildStrGrid() {
+  const g = document.getElementById('strGrid');
+  g.innerHTML = '';
+  for (let s = 0; s < 4; s++) {
+    const col = document.createElement('div');
+    col.className = 'str-col';
+    col.innerHTML = `<div class="str-name">${SNAMES[s]}</div>`;
+    for (let f = 0; f <= 12; f++) {
+      const isO   = f === 0;
+      const isSel = selFrets[s] === f;
+      const btn   = document.createElement('button');
+      btn.className = 'fret-btn' +
+        (isSel ? (isO ? ' sel-open' : ' sel') : '') +
+        (f > 5 && !showAllFrets ? ' hidden-fret' : '');
+      btn.textContent = isO ? '○' : f;
+      btn.onclick = (function(si, fv) {
+        return () => { selFrets[si] = fv; buildStrGrid(); renderB(); };
+      })(s, f);
+      col.appendChild(btn);
+    }
+    g.appendChild(col);
+  }
+}
+
+function detectChord(frets) {
+  const ns = [...new Set(frets.map((f,i) => noteIdx(i,f)))].sort((a,b) => a-b);
+  for (const [key, shape] of Object.entries(CHORD_MAP)) {
+    const sn = [...new Set(shape.map((f,i) => noteIdx(i,f)))].sort((a,b) => a-b);
+    if (JSON.stringify(ns) === JSON.stringify(sn)) {
+      // key format: 'Note_typeValue' — split on first underscore only
+      const underscore = key.indexOf('_');
+      const root  = key.slice(0, underscore);
+      const type  = key.slice(underscore + 1);
+      const label = TYPE_LABELS[type] || type;
+      return root + ' ' + label;
+    }
+  }
+  return null;
+}
+
+function renderB() {
+  document.getElementById('boardWrap').innerHTML = makeFretSVG(selFrets, null, 'lg');
+  const chord     = detectChord(selFrets);
+  const noteNames = selFrets.map((f,i) => NOTES[noteIdx(i,f)]).join(' · ');
+  document.getElementById('resultChord').textContent = chord || '—';
+  document.getElementById('resultNotes').textContent =
+    chord ? noteNames : 'notes: ' + noteNames + ' · no match yet';
+}
+
+function switchMode(m) {
+  document.querySelectorAll('.tab').forEach((t,i) =>
+    t.classList.toggle('active', (i===0 && m==='A') || (i===1 && m==='B')));
+  document.getElementById('panelA').classList.toggle('active', m==='A');
+  document.getElementById('panelB').classList.toggle('active', m==='B');
+}
+
+buildRootTicks(); buildTypeBtns(); renderA();
+buildStrGrid(); renderB();
+</script>
+</body>
+</html>

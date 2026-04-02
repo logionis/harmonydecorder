@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Harmony Decoder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --surface: #161921;
+      --surface2: #1e2230;
+      --gold: #c9a84c;
+      --gold-light: #e8c97a;
+      --teal: #4ecdc4;
+      --text: #f0ede8;
+      --text-muted: #7a8099;
+      --radius: 18px;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      overscroll-behavior: none;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 0 48px;
+    }
+
+    /* ── Header ── */
+    .header {
+      width: 100%;
+      padding: 56px 28px 32px;
+      text-align: center;
+      position: relative;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(201,168,76,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .logo-ring { width:80px; height:80px; margin:0 auto 20px; position:relative; }
+    .logo-ring svg { width:100%; height:100%; animation: spin 18s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .logo-center {
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:28px;
+    }
+
+    .title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 8vw, 2.8rem);
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+      background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, #a87c2a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      font-size: 0.85rem; font-weight: 300;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .divider {
+      width:48px; height:2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin: 24px auto;
+    }
+
+    /* ── Grid ── */
+    .grid {
+      width: 100%; max-width: 480px;
+      padding: 0 20px;
+      display: flex; flex-direction: column;
+      gap: 14px;
+    }
+
+    /* ── Hub Button ── */
+    .hub-btn {
+      display: flex; align-items: center; gap: 18px;
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      text-decoration: none; color: var(--text);
+      cursor: pointer; position: relative; overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.22s ease,
+                  background 0.22s ease, box-shadow 0.22s ease;
+      -webkit-user-select: none; user-select: none;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    /* Shimmer overlay */
+    .hub-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(201,168,76,0.10) 0%, transparent 60%);
+      opacity: 0; transition: opacity 0.22s ease;
+    }
+
+    /* Left accent stripe */
+    .hub-btn::after {
+      content: '';
+      position: absolute;
+      left:0; top:20%; bottom:20%; width:3px;
+      border-radius: 0 2px 2px 0;
+      background: var(--gold);
+      opacity: 0;
+      transition: opacity 0.22s ease, top 0.22s ease, bottom 0.22s ease;
+    }
+
+    /* HOVER */
+    .hub-btn:hover {
+      background: #1c2030;
+      border-color: rgba(201,168,76,0.38);
+      box-shadow: 0 4px 28px rgba(201,168,76,0.11), 0 1px 4px rgba(0,0,0,0.4);
+      transform: translateY(-2px);
+    }
+    .hub-btn:hover::before { opacity: 1; }
+    .hub-btn:hover::after  { opacity: 0.7; top:15%; bottom:15%; }
+    .hub-btn:hover .btn-icon {
+      background: rgba(201,168,76,0.15);
+      border-color: rgba(201,168,76,0.28);
+    }
+    .hub-btn:hover .btn-label { color: var(--gold-light); }
+    .hub-btn:hover .btn-arrow { transform: translateX(4px); color: var(--gold); }
+
+    /* ACTIVE */
+    .hub-btn:active {
+      transform: scale(0.97) translateY(0px);
+      border-color: rgba(201,168,76,0.55);
+      background: var(--surface2);
+      box-shadow: none;
+    }
+    .hub-btn:active::before { opacity: 1; }
+    .hub-btn:active::after  { opacity: 1; top:10%; bottom:10%; }
+    .hub-btn:active .btn-icon { background: rgba(201,168,76,0.22); }
+    .hub-btn:active .btn-arrow { transform: translateX(5px); color: var(--gold); }
+
+    /* Teal accent variant */
+    .hub-btn.accent { border-color: rgba(78,205,196,0.18); }
+    .hub-btn.accent::after { background: var(--teal); }
+    .hub-btn.accent:hover {
+      border-color: rgba(78,205,196,0.45);
+      box-shadow: 0 4px 28px rgba(78,205,196,0.11), 0 1px 4px rgba(0,0,0,0.4);
+    }
+    .hub-btn.accent:hover .btn-icon {
+      background: rgba(78,205,196,0.15);
+      border-color: rgba(78,205,196,0.28);
+    }
+    .hub-btn.accent:hover .btn-label { color: #7eeae4; }
+    .hub-btn.accent:hover .btn-arrow { color: var(--teal); }
+    .hub-btn.accent:active { border-color: rgba(78,205,196,0.55); }
+
+    /* Icon box */
+    .btn-icon {
+      width:48px; height:48px; border-radius:14px;
+      background: var(--surface2);
+      border: 1px solid rgba(255,255,255,0.07);
+      display:flex; align-items:center; justify-content:center;
+      font-size:22px; flex-shrink:0;
+      transition: background 0.22s ease, border-color 0.22s ease;
+    }
+    .btn-icon svg { width:26px; height:26px; }
+
+    .btn-text { flex:1; }
+    .btn-label { font-size:1rem; font-weight:500; line-height:1.2; transition: color 0.22s ease; }
+    .btn-desc  { margin-top:3px; font-size:0.75rem; color:var(--text-muted); font-weight:300; }
+
+    .btn-arrow {
+      color: var(--text-muted); font-size:18px; flex-shrink:0;
+      transition: transform 0.22s ease, color 0.22s ease;
+    }
+
+    /* Stagger */
+    .hub-btn:nth-child(1){animation-delay:.05s}
+    .hub-btn:nth-child(2){animation-delay:.12s}
+    .hub-btn:nth-child(3){animation-delay:.19s}
+    .hub-btn:nth-child(4){animation-delay:.26s}
+    .hub-btn:nth-child(5){animation-delay:.33s}
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(16px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top:44px; text-align:center;
+      font-size:.7rem; letter-spacing:1.5px; text-transform:uppercase;
+      color:#3a3f52;
+    }
+
+    /* ══════════════════════════
+       MODALS
+    ══════════════════════════ */
+    .modal-overlay {
+      position:fixed; inset:0; z-index:100;
+      background: rgba(5,6,10,0.82);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      display:flex; align-items:flex-end; justify-content:center;
+      opacity:0; pointer-events:none;
+      transition: opacity 0.28s ease;
+    }
+    .modal-overlay.open { opacity:1; pointer-events:all; }
+
+    .modal-sheet {
+      width:100%; max-width:480px;
+      background:#13161f;
+      border:1px solid rgba(255,255,255,0.08); border-bottom:none;
+      border-radius:24px 24px 0 0;
+      padding:12px 28px 48px;
+      transform:translateY(100%);
+      transition: transform 0.32s cubic-bezier(0.34,1.12,0.64,1);
+      max-height:88vh; overflow-y:auto;
+      position:relative;
+    }
+    .modal-overlay.open .modal-sheet { transform:translateY(0); }
+
+    .modal-handle {
+      width:40px; height:4px;
+      background:rgba(255,255,255,0.15); border-radius:2px;
+      margin:0 auto 24px;
+    }
+
+    .modal-close {
+      position:absolute; top:18px; right:20px;
+      background:rgba(255,255,255,0.07); border:none; border-radius:50%;
+      width:32px; height:32px; color:var(--text-muted);
+      font-size:18px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      transition: background 0.2s, color 0.2s;
+    }
+    .modal-close:hover { background:rgba(255,255,255,0.13); color:var(--text); }
+
+    /* About */
+    .about-header { text-align:center; margin-bottom:24px; }
+    .about-avatar {
+      width:70px; height:70px; border-radius:50%;
+      background:linear-gradient(135deg,var(--gold) 0%,#4ecdc4 100%);
+      margin:0 auto 14px;
+      display:flex; align-items:center; justify-content:center; font-size:30px;
+    }
+    .about-modal-title {
+      font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:700;
+      background:linear-gradient(135deg,var(--gold-light),var(--gold));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .about-body {
+      font-size:.93rem; line-height:1.78; color:#b8bdd0;
+      display:flex; flex-direction:column; gap:14px;
+    }
+    .about-divider {
+      width:100%; height:1px;
+      background:rgba(255,255,255,0.06); margin:20px 0;
+    }
+    .contact-block {
+      display:flex; align-items:center; gap:12px;
+      background:var(--surface2);
+      border:1px solid rgba(201,168,76,0.18); border-radius:14px;
+      padding:14px 18px; text-decoration:none; color:var(--text);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .contact-block:hover { border-color:rgba(201,168,76,0.4); background:rgba(201,168,76,0.07); }
+    .contact-block span { font-size:20px; }
+    .contact-label { font-size:.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+    .contact-email { font-size:.9rem; color:var(--gold-light); }
+
+    /* QR */
+    .qr-header { text-align:center; margin-bottom:22px; }
+    .qr-modal-title { font-family:'Playfair Display',serif; font-size:1.3rem; font-weight:700; color:var(--gold-light); }
+    .qr-sub { font-size:.8rem; color:var(--text-muted); margin-top:5px; }
+    .qr-box {
+      background:#fff; border-radius:18px; padding:18px;
+      display:flex; align-items:center; justify-content:center;
+      width:fit-content; margin:0 auto 18px;
+      box-shadow:0 0 40px rgba(201,168,76,0.22);
+    }
+    .qr-url { text-align:center; font-size:.76rem; color:var(--text-muted); word-break:break-all; margin-bottom:18px; }
+    .qr-share-btn {
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      width:100%;
+      background:linear-gradient(135deg,var(--gold) 0%,#a87c2a 100%);
+      border:none; border-radius:14px; padding:15px;
+      color:#0d0f14; font-family:'DM Sans',sans-serif;
+      font-size:.95rem; font-weight:600; cursor:pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .qr-share-btn:hover  { opacity:.9; }
+    .qr-share-btn:active { transform:scale(0.97); }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="logo-ring">
+      <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="40" cy="40" r="36" stroke="url(#ringGrad)" stroke-width="1.5" stroke-dasharray="4 6"/>
+        <defs>
+          <linearGradient id="ringGrad" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#c9a84c"/>
+            <stop offset="100%" stop-color="#4ecdc4"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="logo-center">🎵</div>
+    </div>
+    <h1 class="title">Harmony Decoder</h1>
+    <p class="subtitle">Useful Music Resource</p>
+    <div class="divider"></div>
+  </header>
+
+  <!--
+    ╔══════════════════════════════════════════════════╗
+    ║  HUB BUTTONS                                     ║
+    ║  To add a new button, copy one <a> block below.  ║
+    ║  Update: href, .btn-icon content, .btn-label,    ║
+    ║  .btn-desc. Add class="accent" for teal styling. ║
+    ╚══════════════════════════════════════════════════╝
+  -->
+  <main class="grid">
+
+    <a class="hub-btn" href="ukulele.html">
+      <div class="btn-icon">🎸</div>
+      <div class="btn-text">
+        <div class="btn-label">Ukulele Chords Builder</div>
+        <div class="btn-desc">Build and explore chord shapes</div>
+      </div>
+      <span class="btn-arrow">›</span>
+    </a>
+
+    <a class="hub-btn" href="chords.html">
+      <div class="btn-icon">🎹</div>
+      <div class="btn-text">
+        <div class="btn-label">Chord Studio</div>
+        <div class="btn-desc">Identify chords and notes on piano</div>
+      </div>
+      <span class="btn-arrow">›</span>
+    </a>
+
+    <a class="hub-btn accent" href="https://www.youtube.com/channel/UC7lzLM-0gkrLSaNaCr2uWtA" target="_blank" rel="noopener">
+      <div class="btn-icon">▶️</div>
+      <div class="btn-text">
+        <div class="btn-label">YouTube Channel</div>
+        <div class="btn-desc">Deciphering music of the Beatles</div>
+      </div>
+      <span class="btn-arrow">›</span>
+    </a>
+
+    <a class="hub-btn accent" href="#" id="qr-trigger">
+      <div class="btn-icon">🔗</div>
+      <div class="btn-text">
+        <div class="btn-label">Share QR with a Friend</div>
+        <div class="btn-desc">Share this page instantly</div>
+      </div>
+      <span class="btn-arrow">›</span>
+    </a>
+
+    <a class="hub-btn" href="#" id="about-trigger">
+      <div class="btn-icon">ℹ️</div>
+      <div class="btn-text">
+        <div class="btn-label">About Harmony Decoder</div>
+        <div class="btn-desc">The story behind the project</div>
+      </div>
+      <span class="btn-arrow">›</span>
+    </a>
+
+  </main>
+
+  <footer class="footer">© 2026 Harmony Decoder</footer>
+
+  <!-- ── About Modal ── -->
+  <div class="modal-overlay" id="about-modal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <button class="modal-close" id="about-close">×</button>
+
+      <div class="about-header">
+        <div class="about-avatar">
+          <img src="logo.jpg" alt="Harmony Decoder" style="width:86px; height:86px; object-fit:contain; border-radius:8px;">
+        </div>
+        <div class="about-modal-title">About Me</div>
+      </div>
+
+      <div class="about-body">
+        <p>
+          Harmony Decoder was born from a simple idea: music theory shouldn't feel intimidating.
+          I'm a self-taught musician who spent years feeling lost in the language of chords,
+          scales, and progressions — until things finally clicked. This project is my way of paying that
+          moment forward, offering clear, hands-on tools for players of all levels who want to <u>understand</u>
+          the music they love.
+        </p>
+        <p>
+          Whether you're picking up a ukulele for the first time or deepening your knowledge of jazz
+          voicings, I'm here to help. My goal is to keep building, keep simplifying, and keep
+          making music theory feel like an adventure rather than a textbook.
+        </p>
+      </div>
+
+      <div class="about-divider"></div>
+
+      <a class="contact-block" href="mailto:harmony.decoder@gmail.com">
+        <span>✉️</span>
+        <div>
+          <div class="contact-label">Get in touch</div>
+          <div class="contact-email">harmony.decoder@gmail.com</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── QR Modal ── -->
+  <div class="modal-overlay" id="qr-modal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <button class="modal-close" id="qr-close">×</button>
+
+      <div class="qr-header">
+        <div class="qr-modal-title">Share Harmony Decoder</div>
+        <div class="qr-sub">Point any camera at this code to open the page</div>
+      </div>
+
+      <div class="qr-box">
+        <div id="qr-canvas"></div>
+      </div>
+
+      <div class="qr-url" id="qr-url-label"></div>
+
+      <button class="qr-share-btn" id="native-share-btn">
+        <span>↑</span> Share via…
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ── Modal helpers ──────────────────────────────────
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) closeModal(overlay.id);
+      });
+    });
+
+    // ── About ──────────────────────────────────────────
+    document.getElementById('about-trigger').addEventListener('click', e => {
+      e.preventDefault();
+      openModal('about-modal');
+    });
+    document.getElementById('about-close').addEventListener('click', () => {
+      closeModal('about-modal');
+    });
+
+    // ── QR ─────────────────────────────────────────────
+    let qrGenerated = false;
+    const PAGE_URL = window.location.href.split('#')[0];
+
+    document.getElementById('qr-trigger').addEventListener('click', e => {
+      e.preventDefault();
+      openModal('qr-modal');
+      if (!qrGenerated) {
+        document.getElementById('qr-url-label').textContent = PAGE_URL;
+        new QRCode(document.getElementById('qr-canvas'), {
+          text: PAGE_URL,
+          width: 200, height: 200,
+          colorDark: '#0d0f14', colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        qrGenerated = true;
+      }
+    });
+    document.getElementById('qr-close').addEventListener('click', () => {
+      closeModal('qr-modal');
+    });
+
+    // Native share / clipboard fallback
+    document.getElementById('native-share-btn').addEventListener('click', async () => {
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Harmony Decoder',
+            text: 'Check out Harmony Decoder — music tools & theory made simple!',
+            url: PAGE_URL
+          });
+        } catch (_) {}
+      } else {
+        try {
+          await navigator.clipboard.writeText(PAGE_URL);
+          const btn = document.getElementById('native-share-btn');
+          btn.textContent = '✓ Link copied!';
+          setTimeout(() => { btn.innerHTML = '<span>↑</span> Share via…'; }, 2000);
+        } catch (_) {}
+      }
+    });
+  </script>
+
+</body>
+</html>
