@@ -227,7 +227,7 @@ let rootIdx = 0, typeVal = 'major';
 // barres: matching array — fret number of barre, or null
 const CHORD_DB = {
   // ── Major ──────────────────────────────────────────
-  'C_major': { shapes: [[0,0,0,3], [5,4,null,null], [8,null,7,null]], barres: [null, 3, 7] },
+  'C_major': { shapes: [[0,0,0,3], [5,4,null,null], [9,null,8,null]], barres: [null, 3, 7] },
   'C#_major': { shapes: [[null,null,null,4], [6,5,null,null], [9,null,8,null]], barres: [1, 4, 8] },
   'D_major': { shapes: [[2,2,2,0], [null,null,null,5], [7,6,null,null]], barres: [null, 2, 5] },
   'D#_major': { shapes: [[null,null,null,6], [3,3,3,1], [8,7,null,null]], barres: [3, null, 6] },
@@ -241,12 +241,12 @@ const CHORD_DB = {
   'B_major': { shapes: [[4,3,null,null], [8,null,7,null], [4,6,7,6]], barres: [2, 6, null] },
 
   // ── Minor ──────────────────────────────────────────
-  'C_m': { shapes: [[0,3,3,3], [5,null,null,null], [0,7,8,6]], barres: [null, 3, null] },
+  'C_m': { shapes: [[0,3,3,3], [5,null,null,null], [null,7,8,6]], barres: [null, 3, null] },
   'C#_m': { shapes: [[6,null,null,null], [1,1,0,null]], barres: [4, null] },
   'D_m': { shapes: [[2,2,1,0], [2,5,5,5]], barres: [null, null] },
   'D#_m': { shapes: [[3,3,2,1], [3,6,6,6]], barres: [null, null] },
   'E_m': { shapes: [[0,4,3,2], [4,4,3,2], [0,4,0,2]], barres: [null, null, null] },
-  'F_m': { shapes: [[1,0,1,3], [1,5,4,3]], barres: [null, null] },
+  'F_m': { shapes: [[1,0,1,3], [5,5,4,3]], barres: [null, null] },
   'F#_m': { shapes: [[2,1,2,0], [2,1,2,4]], barres: [null, null] },
   'G_m': { shapes: [[0,2,3,1], [3,2,3,5]], barres: [null, null] },
   'G#_m': { shapes: [[4,3,4,2], [1,3,4,2]], barres: [null, null] },
