@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Block Stack</title>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f1f3f6;--fg:#161a24;--pn:#fff;--ln:#cdd3de;--bd:#e9ecf2;--ac:#d6336c;--mu:#5b6478;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10131b;--fg:#e8ecf4;--pn:#181c28;--ln:#2a3144;--bd:#0b0d13;--ac:#ff5d8f;--mu:#97a1b8}}
+:root[data-theme="dark"]{--bg:#10131b;--fg:#e8ecf4;--pn:#181c28;--ln:#2a3144;--bd:#0b0d13;--ac:#ff5d8f;--mu:#97a1b8}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.45 'Chakra Petch',system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:20px 16px}
+h1{font-size:44px;margin:8px 0 4px;letter-spacing:-.5px}
+h2{font-size:17px;margin:22px 0 8px}
+p{margin:0 0 8px;color:var(--mu)}
+button{font:inherit;color:var(--fg);background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:8px 14px;cursor:pointer}
+button:hover{border-color:var(--ac)}button:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modes button{padding:18px;text-align:left;font-weight:700;font-size:18px}
+.modes small{display:block;font-weight:500;font-size:13px;color:var(--mu);margin-top:4px}
+.modes .sp{background:var(--ac);color:#fff;border-color:var(--ac)}.modes .sp small{color:#ffe3ec}
+table{border-collapse:collapse;width:100%}td,th{padding:5px 8px;border-bottom:1px solid var(--ln);text-align:left}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+textarea{width:100%;height:90px;margin-top:8px;background:var(--pn);color:var(--fg);border:1px solid var(--ln);border-radius:8px;font:12px monospace}
+.game{display:flex;gap:16px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+.bw{position:relative}
+canvas{display:block;border:2px solid var(--ln);border-radius:6px;background:var(--bd)}
+#cv{height:min(66vh,560px);aspect-ratio:1/2}
+aside{width:200px;display:flex;flex-direction:column;gap:8px}
+.card{background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:8px 12px}
+.big{font-size:26px;font-weight:700}
+#ov{position:absolute;inset:0;background:rgba(10,12,18,.8);color:#fff;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;text-align:center;border-radius:6px;padding:12px}
+#ov button{color:#fff;background:#262d42;border-color:#3a4464}
+.pad{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+.pad button{padding:12px 14px;font-size:18px}
+[hidden]{display:none!important}
+@media(max-width:520px){.modes{grid-template-columns:1fr}}
+</style></head><body><main>
+<section id="menu">
+<h1>Block Stack</h1>
+<p>Choose a mode to start. Arrow keys move, Up or Z rotates, Space drops, P pauses, M mutes.</p>
+<div class="modes">
+<button onclick="start('regular')">Regular<small>Classic seven pieces.</small></button>
+<button class="sp" onclick="start('special')">Special<small>Bomb, lightning and ghost pieces, plus one Time Rewind.</small></button>
+</div>
+<h2>Special pieces (Special mode)</h2>
+<p>💣 Bomb: explodes on landing or with X, wiping blocks within 3 cells. Special pieces have their own colour and are named in the Next box and above it while falling. ⚡ Lightning: lands like a normal piece, then deletes every column it occupies. 👻 Ghost: falls straight through the stack. When it settles, each of its blocks fills the lowest empty hole in its column, including cavities buried under other blocks. Space settles it right away; a block whose column is full is lost. 🧲 Snapper: also falls through the stack, but each block only fills the top surface, landing on the highest block of its column and ignoring buried holes. R: Time Rewind, once per game, undoes the last 3 pieces and restores the next-piece queue.</p>
+<h2>Music</h2>
+<div class="row"><button id="mt" onclick="toggleMusic()">Music: on</button></div>
+<p id="mi">Playing the built-in folk tune.</p>
+<h2>Stats</h2>
+<div id="st"></div>
+<div class="row" style="margin-top:8px"><button onclick="exp('csv')">Export CSV</button><button onclick="exp('json')">Export JSON</button><button onclick="clr()">Clear stats</button></div>
+<textarea id="ta" hidden readonly aria-label="Exported stats"></textarea>
+</section>
+
+<section id="game" hidden>
+<div class="game">
+<div class="bw"><canvas id="cv" width="280" height="560"></canvas>
+<div id="ov" hidden><div class="big" id="ot"></div><div id="od"></div><div class="row" style="justify-content:center"><input id="nm" maxlength="20" placeholder="Your name" aria-label="Your name" style="font:inherit;padding:8px;border-radius:8px;border:1px solid #3a4464;background:#fff;color:#161a24;width:140px"><button id="nb" onclick="saveName()">Save name</button></div><button onclick="start(g.mode)">Play again</button><button onclick="toMenu()">Menu</button></div></div>
+<aside>
+<div class="card"><div id="hm" style="color:var(--mu)"></div><div id="cp" style="min-height:1.5em;font-weight:700"></div><div>Time</div><div class="big" id="tm">0:00</div><div>Rows cleared</div><div class="big" id="rw">0</div></div>
+<div class="card"><div>Next</div><canvas id="nx" width="100" height="56" style="border:0;background:none"></canvas><div id="nl"></div></div>
+<div class="card" id="rwc"></div>
+<div class="card" id="msg" style="min-height:2.9em;color:var(--ac)"></div>
+<button onclick="pause()">Pause (P)</button><button onclick="toMenu()">Quit to menu</button>
+</aside></div>
+<div class="pad">
+<button onclick="mv(-1)" aria-label="Left">◀</button><button onclick="rot()" aria-label="Rotate">⟳</button><button onclick="mv(1)" aria-label="Right">▶</button><button onclick="soft()" aria-label="Down">▼</button><button onclick="hard()" aria-label="Drop">⤓</button><button onclick="act()" aria-label="Activate">✦</button><button onclick="rew()" aria-label="Rewind">⏪</button>
+</div>
+</section></main>
+<script>
+const W=10,H=20,S=28,$=id=>document.getElementById(id);
+const SH={I:[[1,1,1,1]],O:[[1,1],[1,1]],T:[[0,1,0],[1,1,1]],S:[[0,1,1],[1,1,0]],Z:[[1,1,0],[0,1,1]],J:[[1,0,0],[1,1,1]],L:[[0,0,1],[1,1,1]]};
+const COL={I:'#4cc9f0',O:'#f9c74f',T:'#b388eb',S:'#90be6d',Z:'#f94144',J:'#4d7cfe',L:'#f8961e'};
+/* ============ TUNING: edit these values by hand ============ */
+// 2) How often special blocks appear (Special mode only).
+const SPECIAL_CHANCE=0.45;   // chance (0 to 1) that a new piece is special. Was 0.25.
+const SPECIAL_WEIGHTS={bomb:1,lightning:1,ghost:1,snapper:1}; // relative odds between special types; 0 disables one
+// 4) Fall speed. Delay is in milliseconds between gravity steps (smaller = faster).
+const START_DELAY=800;       // delay at the start of a game
+const SPEEDUP_PER_PIECE=20;   // ms shaved off after every piece that lands
+const MIN_DELAY=300;          // FASTEST allowed delay: speed stops increasing here
+// 3) MIDI music: paste the base64 text of a .mid file between the quotes. Empty = built-in tune.
+// (Make it with: base64 -w0 song.mid, or any online file-to-base64 converter.)
+const MIDI_BASE64='TVRoZAAAAAYAAAABAeBNVHJrAAABKwD/UQMHoSAAwACFP5BIZII1gEgAaZBHZIF+gEcAgUOQSGSBcoBIAIFBkEdkgXSARwCBRJBIZIE3gEgAVZBHZIIAgEcAgRGQSGSEUoBIAIMOkEhkgXWASACBQpBHZIFqgEcAgVqQSGSCBYBIAIEjkEdkgh+ARwCBIJBIZIExgEgASpBHZIFigEcAgWKQRGSFPYBEAII1kEhkgXiASACBRZBHZIIygEcAgR6QSGSCAYBIAIE7kEdkghSARwCBEJBHZIFKgEcAOpBIZIFpgEgAgVOQSWSFGoBJAIMHkEhkgVSASACBa5BHZIFtgEcAgS6QSGSCG4BIAIEjkEdkgWmARwCBS5BIZIFEgEgAQZBHZIFjgEcAgWiQRGSGHoBEAIJIkEFkjAeAQQAA/y8A';
+/* ============================================================ */
+const SP={bomb:['#ff3b30','💣'],lightning:['#ffe600','⚡'],ghost:['#c8d0e0','👻'],snapper:['#2fd48a','🧲']};
+const NAME={bomb:'Bomb',lightning:'Lightning',ghost:'Ghost',snapper:'Snapper'};
+const pass=p=>p.sp==='ghost'||p.sp==='snapper';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+function pickSpecial(){const t=Object.values(SPECIAL_WEIGHTS).reduce((a,b)=>a+b,0);let r=Math.random()*t;for(const k in SPECIAL_WEIGHTS){r-=SPECIAL_WEIGHTS[k];if(r<0)return k}return 'bomb'}
+const cx=$('cv').getContext('2d'),nx=$('nx').getContext('2d');
+let g=null,stats=[];
+try{stats=JSON.parse(localStorage.getItem('tt_stats')||'[]')}catch(e){}
+const saveStats=()=>{try{localStorage.setItem('tt_stats',JSON.stringify(stats))}catch(e){}};
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const clone=b=>b.map(r=>r.map(c=>c&&{...c}));
+const fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+
+/* ---------- game logic ---------- */
+function start(mode){
+  g={mode,board:Array.from({length:H},()=>Array(W).fill(null)),queue:[],bag:[],rows:0,pieces:0,t:0,acc:0,over:false,paused:false,used:false,hist:[],fx:[],saved:false};
+  fill();spawn();$('menu').hidden=true;$('game').hidden=false;$('ov').hidden=true;
+  $('hm').textContent=mode==='special'?'Special mode':'Regular mode';music.play();
+}
+function fill(){
+  while(g.queue.length<6){
+    if(!g.bag.length)g.bag=shuffle(Object.keys(SH));
+    const type=g.bag.pop();let sp=null;
+    if(g.mode==='special'&&Math.random()<SPECIAL_CHANCE)sp=pickSpecial();
+    g.queue.push({type,sp});
+  }
+}
+const snap=()=>({board:clone(g.board),queue:[...g.queue],bag:[...g.bag],rows:g.rows});
+function spawn(push=true){
+  if(push){g.hist.push(snap());if(g.hist.length>4)g.hist.shift()}
+  const d=g.queue.shift();fill();g.acc=0;
+  const sh=SH[d.type].map(r=>[...r]);
+  g.cur={...d,shape:sh,x:(W-sh[0].length)>>1,y:0};
+  if(collide(sh,g.cur.x,0,false))end();
+}
+function collide(sh,x,y,ghost){
+  for(let j=0;j<sh.length;j++)for(let i=0;i<sh[j].length;i++)if(sh[j][i]){
+    const a=x+i,b=y+j;
+    if(a<0||a>=W||b>=H)return true;
+    if(b>=0&&!ghost&&g.board[b][a])return true;
+  }return false;
+}
+function lock(){
+  const p=g.cur;let y=p.y;
+  const cells=[];p.shape.forEach((r,j)=>r.forEach((v,i)=>v&&cells.push([p.x+i,y+j])));
+  if(pass(p)){
+    const by={};cells.forEach(c=>(by[c[0]]=by[c[0]]||[]).push(c));cells.length=0;
+    for(const x in by){let n=by[x].length;
+      if(p.sp==='ghost'){for(let k=H-1;k>=0&&n>0;k--)if(!g.board[k][x]){cells.push([+x,k]);n--}}
+      else{let t=0;while(t<H&&!g.board[t][x])t++;for(let k=t-1;k>=0&&n>0;k--,n--)cells.push([+x,k])}}
+  }
+  const mx=p.x+(p.shape[0].length>>1),my=y+(p.shape.length>>1);
+  if(p.sp==='bomb'){
+    for(let j=0;j<H;j++)for(let i=0;i<W;i++)if((i-mx)**2+(j-my)**2<=9)g.board[j][i]=null;
+    g.fx.push({k:'b',x:mx,y:my,t:0});
+  }else if(p.sp==='lightning'){
+    [...new Set(cells.map(c=>c[0]))].forEach(cx0=>{for(let j=0;j<H;j++)g.board[j][cx0]=null;g.fx.push({k:'l',x:cx0,t:0})});
+  }else cells.forEach(([i,j])=>{if(j>=0)g.board[j][i]={c:p.sp?SP[p.sp][0]:COL[p.type],fr:0}});
+  let n=0;
+  g.board=g.board.filter(r=>{const f=r.every(c=>c&&!c.fr);if(f)n++;return!f});
+  while(g.board.length<H)g.board.unshift(Array(W).fill(null));
+  g.rows+=n;g.pieces++;
+  g.board.forEach(r=>r.forEach(c=>{if(c&&c.fr)c.fr--}));
+  spawn();
+}
+function end(){
+  g.over=true;saveStat();
+  try{$('nm').value=localStorage.getItem('tt_name')||''}catch(e){}$('nb').textContent='Save name';
+  $('ot').textContent='Game over';$('od').textContent=fmt(g.t/1000)+' played, '+g.rows+' rows cleared';$('ov').hidden=false;music.stop();
+}
+function saveStat(){
+  if(g.saved)return;g.saved=true;
+  g.entry={name:'',date:new Date().toISOString(),mode:g.mode,seconds:Math.round(g.t/1000),rows:g.rows};stats.push(g.entry);saveStats();
+}
+function saveName(){
+  if(!g||!g.entry)return;g.entry.name=$('nm').value.trim().slice(0,20);
+  try{localStorage.setItem('tt_name',g.entry.name)}catch(e){}
+  saveStats();$('nb').textContent='Saved ✓';
+}
+function toMenu(){if(g&&!g.over&&(g.rows||g.t>5000))saveStat();music.stop();$('game').hidden=true;$('menu').hidden=false;renderStats()}
+const live=()=>g&&!g.over&&!g.paused;
+function mv(d){if(!live())return;const p=g.cur;if(!collide(p.shape,p.x+d,p.y,pass(p)))p.x+=d}
+function rot(){
+  if(!live())return;const p=g.cur,s=p.shape[0].map((_,i)=>p.shape.map(r=>r[i]).reverse());
+  for(const k of [0,-1,1,-2,2])if(!collide(s,p.x+k,p.y,pass(p))){p.shape=s;p.x+=k;return}
+}
+function step(){
+  const p=g.cur;
+  if(!collide(p.shape,p.x,p.y+1,pass(p)))p.y++;else lock();
+}
+function soft(){if(live())step()}
+function hard(){
+  if(!live())return;const p=g.cur;
+  if(!pass(p))while(!collide(p.shape,p.x,p.y+1,false))p.y++;
+  lock();
+}
+function act(){
+  if(!live())return;
+  if(g.cur.sp==='bomb')lock();else flash('Only the bomb needs activating.');
+}
+function rew(){
+  if(!live())return;
+  if(g.mode!=='special')return flash('Time Rewind is a Special mode power.');
+  if(g.used)return flash('Time Rewind already used this game.');
+  if(g.hist.length<2)return flash('Place a piece first, then rewind.');
+  const i=Math.max(0,g.hist.length-4),s=g.hist[i];
+  g.hist.length=i;g.board=clone(s.board);g.queue=[...s.queue];g.bag=[...s.bag];g.rows=s.rows;g.used=true;g.fx=[];
+  spawn();flash('Rewound to '+(g.hist.length===1&&i===0?'the start':'3 moves ago')+'.');
+}
+function pause(){if(g&&!g.over){g.paused=!g.paused;flash(g.paused?'Paused':'')}}
+let ft;function flash(m){$('msg').textContent=m;clearTimeout(ft);ft=setTimeout(()=>$('msg').textContent='',2500)}
+const KEYS={ArrowLeft:()=>mv(-1),ArrowRight:()=>mv(1),ArrowUp:rot,KeyZ:rot,ArrowDown:soft,Space:hard,KeyX:act,KeyR:rew,KeyP:pause,KeyM:()=>toggleMusic()};
+addEventListener('keydown',e=>{
+  if(!g||$('game').hidden||e.target.tagName==='INPUT')return;const f=KEYS[e.code];
+  if(f){e.preventDefault();f()}
+});
+
+/* ---------- rendering ---------- */
+function cell(c,x,y,col,s,a=1){
+  c.globalAlpha=a;c.fillStyle=col;c.fillRect(x*s+1,y*s+1,s-2,s-2);
+  c.fillStyle='rgba(255,255,255,.3)';c.fillRect(x*s+1,y*s+1,s-2,Math.max(3,s/7));c.globalAlpha=1;
+}
+function icon(c,ch,x,y,s){c.font=(s*.6)+'px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(ch,x*s+s/2,y*s+s/2+1)}
+function draw(){
+  const st=getComputedStyle(document.documentElement);
+  cx.fillStyle=st.getPropertyValue('--bd');cx.fillRect(0,0,W*S,H*S);
+  cx.strokeStyle=st.getPropertyValue('--ln');cx.globalAlpha=.4;cx.lineWidth=1;cx.beginPath();
+  for(let i=1;i<W;i++){cx.moveTo(i*S,0);cx.lineTo(i*S,H*S)}
+  for(let j=1;j<H;j++){cx.moveTo(0,j*S);cx.lineTo(W*S,j*S)}
+  cx.stroke();cx.globalAlpha=1;
+  g.board.forEach((r,j)=>r.forEach((c,i)=>{if(!c)return;cell(cx,i,j,c.c,S);
+    if(c.fr){cx.fillStyle='rgba(125,211,252,.6)';cx.fillRect(i*S+1,j*S+1,S-2,S-2);cx.fillStyle='#06324a';icon(cx,c.fr,i,j,S)}}));
+  const p=g.cur;
+  if(p&&!g.over){
+    const col=p.sp?SP[p.sp][0]:COL[p.type];let first=true;
+    p.shape.forEach((r,j)=>r.forEach((v,i)=>{if(!v)return;cell(cx,p.x+i,p.y+j,col,S,pass(p)?.6:1);
+      if(p.sp&&first){first=false;icon(cx,SP[p.sp][1],p.x+i,p.y+j,S)}}));
+  }
+  g.fx.forEach(f=>{
+    cx.globalAlpha=1-f.t;
+    if(f.k==='b'){cx.strokeStyle='#ff5a1f';cx.lineWidth=6;cx.beginPath();cx.arc(f.x*S+S/2,f.y*S+S/2,3*S*Math.min(1,f.t*2+.3),0,7);cx.stroke()}
+    else{cx.fillStyle='#fde047';cx.fillRect(f.x*S,0,S,H*S)}
+    cx.globalAlpha=1;
+  });
+  nx.clearRect(0,0,100,56);
+  {const d=g.queue[0],sh=SH[d.type],col=d.sp?SP[d.sp][0]:COL[d.type];let first=true;
+    sh.forEach((r,j)=>r.forEach((v,i)=>{if(!v)return;cell(nx,i+.5,j+.4,col,20);
+      if(d.sp&&first){first=false;icon(nx,SP[d.sp][1],i+.5,j+.4,20)}}));
+    const l=$('nl');l.textContent=d.sp?SP[d.sp][1]+' '+NAME[d.sp]+' block':'Regular block';l.style.color=d.sp?SP[d.sp][0]:'';l.style.fontWeight=d.sp?'700':'500'}
+}
+function hud(){
+  $('tm').textContent=fmt(g.t/1000);$('rw').textContent=g.rows;
+  const cs=g.cur&&g.cur.sp;$('cp').textContent=cs?'Now: '+SP[cs][1]+' '+NAME[cs]:'';$('cp').style.color=cs?SP[cs][0]:'';
+  $('rwc').textContent=g.mode==='special'?(g.used?'Time Rewind: used':'Time Rewind: ready (R)'):'Special powers are off';
+}
+let last=0;
+function loop(ts){
+  const dt=Math.min(100,ts-last);last=ts;
+  if(g&&!$('game').hidden){
+    if(live()){g.t+=dt;g.acc+=dt;const sp=Math.max(MIN_DELAY,START_DELAY-g.pieces*SPEEDUP_PER_PIECE);while(g.acc>sp&&!g.over){g.acc-=sp;step()}}
+    g.fx.forEach(f=>f.t+=dt/450);g.fx=g.fx.filter(f=>f.t<1);draw();hud();
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ---------- stats ---------- */
+function renderStats(){
+  const el=$('st');
+  if(!stats.length){el.innerHTML='<p>No games recorded yet. Finish or quit a game to log it.</p>';return}
+  const best=Math.max(...stats.map(s=>s.rows));
+  el.innerHTML='<p>'+stats.length+' games logged, best '+best+' rows.</p><table><tr><th>Name</th><th>Date</th><th>Mode</th><th>Time</th><th>Rows</th></tr>'+
+    stats.slice(-6).reverse().map(s=>'<tr><td>'+esc(s.name||'–')+'</td><td>'+new Date(s.date).toLocaleDateString()+'</td><td>'+s.mode+'</td><td>'+fmt(s.seconds)+'</td><td>'+s.rows+'</td></tr>').join('')+'</table>';
+}
+async function exp(kind){
+  const data=kind==='csv'?'name,date,mode,seconds,rows\n'+stats.map(s=>[s.name||'',s.date,s.mode,s.seconds,s.rows].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'):JSON.stringify(stats,null,2);
+  let ok=false;
+  try{const d=window.claude&&await claude.use('downloads');if(d){await d.save({filename:'tetris-stats.'+kind,data});ok=true}}catch(e){}
+  if(!ok){const t=$('ta');t.hidden=false;t.value=data;t.select()}
+}
+function clr(){if(stats.length&&confirm('Delete all saved stats?')){stats=[];saveStats();renderStats()}}
+renderStats();
+
+/* ---------- music: built-in tune + MIDI file parser ---------- */
+const DEF=(()=>{let t=0;return '76:1,71:.5,72:.5,74:1,72:.5,71:.5,69:1,69:.5,72:.5,76:1,74:.5,72:.5,71:1.5,72:.5,74:1,76:1,72:1,69:1,69:2'.split(',').map(s=>{const[n,b]=s.split(':').map(Number);const o={t:t*.3,d:b*.27,n};t+=b;return o})})();
+function parseMidi(buf){
+  const d=new DataView(buf);let p=0;
+  const u32=()=>{const v=d.getUint32(p);p+=4;return v},u16=()=>{const v=d.getUint16(p);p+=2;return v};
+  const vl=()=>{let v=0,b;do{b=d.getUint8(p++);v=v<<7|b&127}while(b&128);return v};
+  if(u32()!==0x4d546864)throw 0;u32();u16();const n=u16(),div=u16();
+  const notes=[],tempos=[[0,500000]];
+  for(let t=0;t<n;t++){
+    if(u32()!==0x4d54726b)throw 0;const end=p+u32();let tick=0,run=0;const on={};
+    while(p<end){
+      tick+=vl();let s=d.getUint8(p);
+      if(s===255){p++;const ty=d.getUint8(p++),l=vl();if(ty===0x51)tempos.push([tick,d.getUint8(p)<<16|d.getUint8(p+1)<<8|d.getUint8(p+2)]);p+=l}
+      else if(s===240||s===247){p++;p+=vl()}
+      else{
+        if(s&128){run=s;p++}else s=run;
+        const hi=s&240,ch=s&15,a=d.getUint8(p++);let b=0;
+        if(hi!==192&&hi!==208)b=d.getUint8(p++);
+        if(ch===9)continue;
+        const k=ch+':'+a;
+        if(hi===144&&b>0){if(on[k]==null)on[k]=tick}
+        else if(hi===128||hi===144){if(on[k]!=null){notes.push([on[k],tick-on[k],a]);delete on[k]}}
+      }
+    }
+    p=end;
+  }
+  tempos.sort((a,b)=>a[0]-b[0]);
+  const sec=tk=>{let s=0,lt=0,tp=500000;for(const[t,v]of tempos){if(t>=tk)break;s+=(t-lt)*tp/1e6/div;lt=t;tp=v}return s+(tk-lt)*tp/1e6/div};
+  const out=notes.map(([t,l,k])=>({t:sec(t),d:sec(t+l)-sec(t),n:k}));
+  if(!out.length)throw 0;return out;
+}
+const music={ctx:null,notes:DEF,on:true,m:null,to:null,
+  play(){
+    if(!this.on)return;this.stop();
+    try{this.ctx=this.ctx||new AudioContext();this.ctx.resume()}catch(e){return}
+    const c=this.ctx,m=c.createGain();m.gain.value=.5;m.connect(c.destination);this.m=m;
+    const t0=c.currentTime+.1;let end=0;
+    for(const n of this.notes){
+      const o=c.createOscillator(),e=c.createGain(),s=t0+n.t,dd=Math.max(.05,n.d);
+      o.type='square';o.frequency.value=440*2**((n.n-69)/12);
+      e.gain.setValueAtTime(.0001,s);e.gain.exponentialRampToValueAtTime(.04,s+.01);e.gain.exponentialRampToValueAtTime(.0001,s+dd);
+      o.connect(e);e.connect(m);o.start(s);o.stop(s+dd+.02);end=Math.max(end,n.t+n.d);
+    }
+    this.to=setTimeout(()=>this.play(),Math.max(1,end+.3)*1000);
+  },
+  stop(){clearTimeout(this.to);if(this.m){this.m.disconnect();this.m=null}}};
+function toggleMusic(){
+  music.on=!music.on;$('mt').textContent='Music: '+(music.on?'on':'off');
+  if(!music.on)music.stop();else if(g&&!$('game').hidden&&!g.over)music.play();
+}
+if(MIDI_BASE64.trim()){
+  try{const bin=atob(MIDI_BASE64.replace(/\s/g,'')),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+    music.notes=parseMidi(u.buffer);$('mi').textContent='Playing your MIDI file ('+music.notes.length+' notes).'}
+  catch(x){$('mi').textContent='MIDI_BASE64 couldn’t be read as a standard MIDI file; using the built-in tune.'}
+}
+</script></body></html>
