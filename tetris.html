@@ -117,7 +117,7 @@ const SPECIAL_WEIGHTS={bomb:1,lightning:1,ghost:1,snapper:1}; // relative odds b
 // 4) Fall speed. Delay is in milliseconds between gravity steps (smaller = faster).
 const START_DELAY=800;       // delay at the start of a game
 const SPEEDUP_PER_PIECE=20;   // ms shaved off after every piece that lands
-const MIN_DELAY=300;          // FASTEST allowed delay: speed stops increasing here
+const MIN_DELAY=125;          // FASTEST allowed delay: speed stops increasing here
 // 3) MIDI music: paste the base64 text of a .mid file between the quotes. Empty = built-in tune.
 // (Make it with: base64 -w0 song.mid, or any online file-to-base64 converter.)
 const MIDI_BASE64='TVRoZAAAAAYAAAABAeBNVHJrAAABKwD/UQMHoSAAwACFP5BIZII1gEgAaZBHZIF+gEcAgUOQSGSBcoBIAIFBkEdkgXSARwCBRJBIZIE3gEgAVZBHZIIAgEcAgRGQSGSEUoBIAIMOkEhkgXWASACBQpBHZIFqgEcAgVqQSGSCBYBIAIEjkEdkgh+ARwCBIJBIZIExgEgASpBHZIFigEcAgWKQRGSFPYBEAII1kEhkgXiASACBRZBHZIIygEcAgR6QSGSCAYBIAIE7kEdkghSARwCBEJBHZIFKgEcAOpBIZIFpgEgAgVOQSWSFGoBJAIMHkEhkgVSASACBa5BHZIFtgEcAgS6QSGSCG4BIAIEjkEdkgWmARwCBS5BIZIFEgEgAQZBHZIFjgEcAgWiQRGSGHoBEAIJIkEFkjAeAQQAA/y8A';
