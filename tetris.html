@@ -34,7 +34,44 @@ aside{width:200px;display:flex;flex-direction:column;gap:8px}
 .pad{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px}
 .pad button{padding:12px 14px;font-size:18px}
 [hidden]{display:none!important}
+body{-webkit-text-size-adjust:100%;overscroll-behavior:none}
+:root{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+button,canvas{touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#cv{touch-action:none}
+.stat b{display:block}.ab{display:contents}
+@media(pointer:coarse){button{min-height:44px}}
 @media(max-width:520px){.modes{grid-template-columns:1fr}}
+/* iPhone portrait */
+@media(orientation:portrait) and (max-width:900px){
+ main{padding:0}#menu{padding:16px}
+ #game:not([hidden]){display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;padding:8px 10px;height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+ .game{flex-direction:column;flex-wrap:nowrap;align-items:center;gap:6px}
+ aside{order:-1;width:100%;flex-direction:row;gap:6px;align-items:stretch}
+ .ab{display:flex;flex-direction:column;gap:6px}.ab button{flex:1;padding:2px 12px;min-height:0}
+ #cv{height:calc(100dvh - 255px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));max-height:calc((100vw - 24px)*2)}
+ .pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0}
+ .pad button{height:56px;font-size:24px;padding:0}
+}
+/* iPhone landscape */
+@media(orientation:landscape) and (max-height:500px){
+ main{padding:0}#menu{padding:12px 16px}
+ #game:not([hidden]){display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;box-sizing:border-box;padding:6px 10px;height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+ .game{display:contents}
+ aside{grid-column:1;grid-row:1;width:auto;gap:4px}.bw{grid-column:2;grid-row:1}
+ .pad{grid-column:3;grid-row:1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0}
+ .pad button{height:52px;font-size:22px;padding:0}
+ .ab{display:flex;gap:6px}.ab button{flex:1;padding:2px;min-height:0}
+ #cv{height:calc(100dvh - 20px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+}
+/* compact HUD shared by both phone layouts */
+@media(orientation:portrait) and (max-width:900px),(orientation:landscape) and (max-height:500px){
+ aside .card{flex:1;padding:4px 8px;font-size:12px;line-height:1.25}
+ #rwc,#hm{display:none}
+ .stat b{display:inline;font-size:17px;margin-left:6px}
+ #nx{width:72px;height:auto}
+ #msg{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 100px);z-index:5;min-height:0!important;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+ #msg:empty{display:none}
+}
 </style></head><body><main>
 <section id="menu">
 <h1>Block Stack</h1>
@@ -57,16 +94,16 @@ aside{width:200px;display:flex;flex-direction:column;gap:8px}
 <section id="game" hidden>
 <div class="game">
 <div class="bw"><canvas id="cv" width="280" height="560"></canvas>
-<div id="ov" hidden><div class="big" id="ot"></div><div id="od"></div><div class="row" style="justify-content:center"><input id="nm" maxlength="20" placeholder="Your name" aria-label="Your name" style="font:inherit;padding:8px;border-radius:8px;border:1px solid #3a4464;background:#fff;color:#161a24;width:140px"><button id="nb" onclick="saveName()">Save name</button></div><button onclick="start(g.mode)">Play again</button><button onclick="toMenu()">Menu</button></div></div>
+<div id="ov" hidden><div class="big" id="ot"></div><div id="od"></div><div class="row" style="justify-content:center"><input id="nm" maxlength="20" placeholder="Your name" aria-label="Your name" style="font:inherit;font-size:16px;padding:8px;border-radius:8px;border:1px solid #3a4464;background:#fff;color:#161a24;width:140px"><button id="nb" onclick="saveName()">Save name</button></div><button onclick="start(g.mode)">Play again</button><button onclick="toMenu()">Menu</button></div></div>
 <aside>
-<div class="card"><div id="hm" style="color:var(--mu)"></div><div id="cp" style="min-height:1.5em;font-weight:700"></div><div>Time</div><div class="big" id="tm">0:00</div><div>Rows cleared</div><div class="big" id="rw">0</div></div>
+<div class="card"><div id="hm" style="color:var(--mu)"></div><div id="cp" style="min-height:1.5em;font-weight:700"></div><div class="stat">Time<b class="big" id="tm">0:00</b></div><div class="stat">Rows<b class="big" id="rw">0</b></div></div>
 <div class="card"><div>Next</div><canvas id="nx" width="100" height="56" style="border:0;background:none"></canvas><div id="nl"></div></div>
 <div class="card" id="rwc"></div>
 <div class="card" id="msg" style="min-height:2.9em;color:var(--ac)"></div>
-<button onclick="pause()">Pause (P)</button><button onclick="toMenu()">Quit to menu</button>
+<div class="ab"><button onclick="pause()">Pause</button><button onclick="toMenu()">Menu</button></div>
 </aside></div>
 <div class="pad">
-<button onclick="mv(-1)" aria-label="Left">◀</button><button onclick="rot()" aria-label="Rotate">⟳</button><button onclick="mv(1)" aria-label="Right">▶</button><button onclick="soft()" aria-label="Down">▼</button><button onclick="hard()" aria-label="Drop">⤓</button><button onclick="act()" aria-label="Activate">✦</button><button onclick="rew()" aria-label="Rewind">⏪</button>
+<button data-a="L" aria-label="Left">◀</button><button data-a="U" aria-label="Rotate">⟳</button><button data-a="R" aria-label="Right">▶</button><button data-a="H" aria-label="Drop">⤓</button><button data-a="D" aria-label="Down">▼</button><button data-a="X" id="act" aria-label="Activate bomb">✦</button><button data-a="B" id="rwb" aria-label="Time rewind">⏪</button>
 </div>
 </section></main>
 <script>
@@ -79,11 +116,11 @@ const SPECIAL_CHANCE=0.45;   // chance (0 to 1) that a new piece is special. Was
 const SPECIAL_WEIGHTS={bomb:1,lightning:1,ghost:1,snapper:1}; // relative odds between special types; 0 disables one
 // 4) Fall speed. Delay is in milliseconds between gravity steps (smaller = faster).
 const START_DELAY=800;       // delay at the start of a game
-const SPEEDUP_PER_PIECE=20;   // ms shaved off after every piece that lands
-const MIN_DELAY=300;          // FASTEST allowed delay: speed stops increasing here
+const SPEEDUP_PER_PIECE=4;   // ms shaved off after every piece that lands
+const MIN_DELAY=90;          // FASTEST allowed delay: speed stops increasing here
 // 3) MIDI music: paste the base64 text of a .mid file between the quotes. Empty = built-in tune.
 // (Make it with: base64 -w0 song.mid, or any online file-to-base64 converter.)
-const MIDI_BASE64='TVRoZAAAAAYAAAABAeBNVHJrAAABKwD/UQMHoSAAwACFP5BIZII1gEgAaZBHZIF+gEcAgUOQSGSBcoBIAIFBkEdkgXSARwCBRJBIZIE3gEgAVZBHZIIAgEcAgRGQSGSEUoBIAIMOkEhkgXWASACBQpBHZIFqgEcAgVqQSGSCBYBIAIEjkEdkgh+ARwCBIJBIZIExgEgASpBHZIFigEcAgWKQRGSFPYBEAII1kEhkgXiASACBRZBHZIIygEcAgR6QSGSCAYBIAIE7kEdkghSARwCBEJBHZIFKgEcAOpBIZIFpgEgAgVOQSWSFGoBJAIMHkEhkgVSASACBa5BHZIFtgEcAgS6QSGSCG4BIAIEjkEdkgWmARwCBS5BIZIFEgEgAQZBHZIFjgEcAgWiQRGSGHoBEAIJIkEFkjAeAQQAA/y8A';
+const MIDI_BASE64='';
 /* ============================================================ */
 const SP={bomb:['#ff3b30','💣'],lightning:['#ffe600','⚡'],ghost:['#c8d0e0','👻'],snapper:['#2fd48a','🧲']};
 const NAME={bomb:'Bomb',lightning:'Lightning',ghost:'Ghost',snapper:'Snapper'};
@@ -102,7 +139,7 @@ const fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
 function start(mode){
   g={mode,board:Array.from({length:H},()=>Array(W).fill(null)),queue:[],bag:[],rows:0,pieces:0,t:0,acc:0,over:false,paused:false,used:false,hist:[],fx:[],saved:false};
   fill();spawn();$('menu').hidden=true;$('game').hidden=false;$('ov').hidden=true;
-  $('hm').textContent=mode==='special'?'Special mode':'Regular mode';music.play();
+  $('hm').textContent=mode==='special'?'Special mode':'Regular mode';$('act').hidden=$('rwb').hidden=mode!=='special';music.play();
 }
 function fill(){
   while(g.queue.length<6){
@@ -238,7 +275,7 @@ function draw(){
 function hud(){
   $('tm').textContent=fmt(g.t/1000);$('rw').textContent=g.rows;
   const cs=g.cur&&g.cur.sp;$('cp').textContent=cs?'Now: '+SP[cs][1]+' '+NAME[cs]:'';$('cp').style.color=cs?SP[cs][0]:'';
-  $('rwc').textContent=g.mode==='special'?(g.used?'Time Rewind: used':'Time Rewind: ready (R)'):'Special powers are off';
+  $('rwb').style.opacity=g.used?.35:1;$('rwc').textContent=g.mode==='special'?(g.used?'Time Rewind: used':'Time Rewind: ready (R)'):'Special powers are off';
 }
 let last=0;
 function loop(ts){
@@ -323,4 +360,22 @@ if(MIDI_BASE64.trim()){
     music.notes=parseMidi(u.buffer);$('mi').textContent='Playing your MIDI file ('+music.notes.length+' notes).'}
   catch(x){$('mi').textContent='MIDI_BASE64 couldn’t be read as a standard MIDI file; using the built-in tune.'}
 }
+/* ---------- touch controls: hold buttons to repeat, swipe/tap on the board ---------- */
+const ACT={L:()=>mv(-1),R:()=>mv(1),D:soft,U:rot,H:hard,X:act,B:rew};
+document.querySelectorAll('.pad button').forEach(b=>{
+  const k=b.dataset.a,f=ACT[k];let t1,t2;const stop=()=>{clearTimeout(t1);clearInterval(t2)};
+  b.addEventListener('pointerdown',e=>{e.preventDefault();f();stop();if('LRD'.includes(k))t1=setTimeout(()=>{t2=setInterval(f,k==='D'?55:85)},230)});
+  ['pointerup','pointercancel','pointerleave'].forEach(n=>b.addEventListener(n,stop));
+});
+{const cv=$('cv');let ts=null;
+  cv.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;ts={x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,t:performance.now(),m:false};cv.setPointerCapture(e.pointerId)});
+  cv.addEventListener('pointermove',e=>{if(!ts)return;const cw=cv.clientWidth/W;
+    while(e.clientX-ts.x>=cw){mv(1);ts.x+=cw;ts.m=true}
+    while(ts.x-e.clientX>=cw){mv(-1);ts.x-=cw;ts.m=true}
+    while(e.clientY-ts.y>=cw){soft();ts.y+=cw;ts.m=true}});
+  cv.addEventListener('pointerup',e=>{if(!ts)return;const cw=cv.clientWidth/W,dt=performance.now()-ts.t,dx=e.clientX-ts.sx,dy=e.clientY-ts.sy;
+    if(!ts.m&&Math.abs(dx)<10&&Math.abs(dy)<10&&dt<300)rot();
+    else if(dy>cw*3&&dt<250&&Math.abs(dx)<cw*1.5)hard();
+    ts=null});
+  cv.addEventListener('pointercancel',()=>{ts=null});}
 </script></body></html>
